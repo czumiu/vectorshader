@@ -244,7 +244,7 @@
     <div class="topbar">
       <div class="title-wrap">
         <strong>VectorShader</strong>
-        <span class="pill">v14 path cubic stroke fallback sampling</span>
+        <span class="pill">v13 compound path stroke lines+quadratics</span>
       </div>
       <div class="actions">
         <input id="svgFileInput" type="file" accept=".svg,image/svg+xml" hidden />
@@ -556,16 +556,6 @@
       if (seg.type === 'cubic') return seg.p3;
       if (seg.type === 'arc') return seg.p1;
       return seg.p1 || seg.p0;
-    }
-
-    function evalCubicPoint(p0, p1, p2, p3, t) {
-      const u = 1 - t;
-      const uu = u * u;
-      const tt = t * t;
-      return {
-        x: uu * u * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + tt * t * p3.x,
-        y: uu * u * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + tt * t * p3.y
-      };
     }
 
     function parsePathSubpaths(pathData) {
@@ -886,15 +876,6 @@
                   b: matApply(matrix, seg.p1),
                   c: matApply(matrix, seg.p2)
                 });
-              } else if (seg.type === 'cubic') {
-                const cubicSteps = 24;
-                let prev = matApply(matrix, seg.p0);
-                for (let step = 1; step <= cubicSteps; step += 1) {
-                  const t = step / cubicSteps;
-                  const sample = matApply(matrix, evalCubicPoint(seg.p0, seg.p1, seg.p2, seg.p3, t));
-                  strokePrimitives.push({ kind: 'line', a: prev, b: sample });
-                  prev = sample;
-                }
               }
             });
           });
@@ -1037,7 +1018,7 @@
         `// source chars: ${model.sourceLength}`,
         `// shapes: ${model.shapeCount}`,
         `// supported emitted shapes: ${supportedShapeCount}`,
-        '// currently supported in shader emission: rect/circle/ellipse fills + line/polyline/path(line+quad+cubic-sampled) strokes',
+        '// currently supported in shader emission: rect/circle/ellipse fills + line/polyline/path(line+quad) strokes',
         '',
         'shader_type canvas_item;',
         '',
