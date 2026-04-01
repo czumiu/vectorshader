@@ -244,7 +244,7 @@
     <div class="topbar">
       <div class="title-wrap">
         <strong>VectorShader</strong>
-        <span class="pill">v7 centered rect stroke thickness fix</span>
+        <span class="pill">v9 ellipse centered stroke thickness fix</span>
       </div>
       <div class="actions">
         <input id="svgFileInput" type="file" accept=".svg,image/svg+xml" hidden />
@@ -761,11 +761,13 @@
       const stroke = node.getAttribute('stroke') ?? style.stroke ?? inheritedPaint?.stroke ?? 'none';
       const strokeWidth = parseNumber(node.getAttribute('stroke-width') ?? style['stroke-width'] ?? inheritedPaint?.strokeWidth ?? 1, 1);
       const fillRule = node.getAttribute('fill-rule') ?? style['fill-rule'] ?? inheritedPaint?.fillRule ?? 'nonzero';
+      const strokeLinejoin = (node.getAttribute('stroke-linejoin') ?? style['stroke-linejoin'] ?? inheritedPaint?.strokeLinejoin ?? 'miter').toLowerCase();
       return {
         fill,
         stroke,
         strokeWidth,
-        fillRule: fillRule === 'evenodd' ? 'evenodd' : 'nonzero'
+        fillRule: fillRule === 'evenodd' ? 'evenodd' : 'nonzero',
+        strokeLinejoin
       };
     }
 
@@ -1017,6 +1019,7 @@
         const fill = colorStringToRgba(shape.paint?.fill);
         const stroke = colorStringToRgba(shape.paint?.stroke);
         const strokeWidth = Math.max(0, Number(shape.paint?.strokeWidth || 0));
+        const strokeLinejoin = String(shape.paint?.strokeLinejoin || 'miter').toLowerCase();
         if (!fill) {
           lines.push(`  // shape ${idx + 1} (${shape.tag}) skipped: non-solid/none fill`);
           if (!stroke || strokeWidth <= 0) return;
@@ -1037,23 +1040,32 @@
           else lines.push(`    float d = sdBox(lp - vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(halfX)}, ${fmt(halfY)}));`);
           if (fill) lines.push(`    applyPaint(out_col, vec4(${fmt(fill.r)}, ${fmt(fill.g)}, ${fmt(fill.b)}, ${fmt(fill.a)}), d <= 0.0 ? 1.0 : 0.0);`);
           if (stroke && strokeWidth > 0) {
-            lines.push(`    vec2 outerHalf = vec2(${fmt(halfX)}, ${fmt(halfY)}) + vec2(${fmt(strokeWidth * 0.5)});`);
-            lines.push(`    vec2 innerHalf = max(vec2(0.0), vec2(${fmt(halfX)}, ${fmt(halfY)}) - vec2(${fmt(strokeWidth * 0.5)}));`);
-            lines.push(`    float outerD = 1.0;`);
-            lines.push(`    float innerD = 1.0;`);
             if (cornerRx > 0 && cornerRy > 0) {
+              lines.push(`    vec2 outerHalf = vec2(${fmt(halfX)}, ${fmt(halfY)}) + vec2(${fmt(strokeWidth * 0.5)});`);
+              lines.push(`    vec2 innerHalf = max(vec2(0.0), vec2(${fmt(halfX)}, ${fmt(halfY)}) - vec2(${fmt(strokeWidth * 0.5)}));`);
+              lines.push(`    float outerD = 1.0;`);
+              lines.push(`    float innerD = 1.0;`);
               lines.push(`    vec2 outerR = vec2(${fmt(cornerRx)}, ${fmt(cornerRy)}) + vec2(${fmt(strokeWidth * 0.5)});`);
               lines.push(`    vec2 innerR = max(vec2(0.0), vec2(${fmt(cornerRx)}, ${fmt(cornerRy)}) - vec2(${fmt(strokeWidth * 0.5)}));`);
               lines.push(`    outerD = sdRoundedBoxSvg(lp - vec2(${fmt(cx)}, ${fmt(cy)}), outerHalf, outerR);`);
               lines.push(`    innerD = (innerR.x > 0.0 && innerR.y > 0.0) ? sdRoundedBoxSvg(lp - vec2(${fmt(cx)}, ${fmt(cy)}), innerHalf, innerR) : sdBox(lp - vec2(${fmt(cx)}, ${fmt(cy)}), innerHalf);`);
+              lines.push(`    float outerInside = outerD <= 0.0 ? 1.0 : 0.0;`);
+              lines.push(`    float innerInside = innerD <= 0.0 ? 1.0 : 0.0;`);
+              lines.push(`    float strokeMask = max(0.0, outerInside - innerInside);`);
+              lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
+            } else if (strokeLinejoin === 'round') {
+              lines.push(`    float strokeMask = opOnion(d, ${fmt(strokeWidth * 0.5)}) <= 0.0 ? 1.0 : 0.0;`);
+              lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
             } else {
-              lines.push(`    outerD = sdBox(lp - vec2(${fmt(cx)}, ${fmt(cy)}), outerHalf);`);
-              lines.push(`    innerD = sdBox(lp - vec2(${fmt(cx)}, ${fmt(cy)}), innerHalf);`);
+              lines.push(`    vec2 outerHalf = vec2(${fmt(halfX)}, ${fmt(halfY)}) + vec2(${fmt(strokeWidth * 0.5)});`);
+              lines.push(`    vec2 innerHalf = max(vec2(0.0), vec2(${fmt(halfX)}, ${fmt(halfY)}) - vec2(${fmt(strokeWidth * 0.5)}));`);
+              lines.push(`    float outerD = sdBox(lp - vec2(${fmt(cx)}, ${fmt(cy)}), outerHalf);`);
+              lines.push(`    float innerD = sdBox(lp - vec2(${fmt(cx)}, ${fmt(cy)}), innerHalf);`);
+              lines.push(`    float outerInside = outerD <= 0.0 ? 1.0 : 0.0;`);
+              lines.push(`    float innerInside = innerD <= 0.0 ? 1.0 : 0.0;`);
+              lines.push(`    float strokeMask = max(0.0, outerInside - innerInside);`);
+              lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
             }
-            lines.push(`    float outerInside = outerD <= 0.0 ? 1.0 : 0.0;`);
-            lines.push(`    float innerInside = innerD <= 0.0 ? 1.0 : 0.0;`);
-            lines.push(`    float strokeMask = max(0.0, outerInside - innerInside);`);
-            lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
           }
           lines.push('  }');
           return;
@@ -1065,7 +1077,16 @@
           lines.push(`    vec2 lp = vec2(${fmt(inv.a)}*p.x + ${fmt(inv.c)}*p.y + ${fmt(inv.e)}, ${fmt(inv.b)}*p.x + ${fmt(inv.d)}*p.y + ${fmt(inv.f)});`);
           lines.push(`    float d = sdEllipseViaCircle(lp - vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(Math.max(0, rx))}, ${fmt(Math.max(0, ry))}));`);
           if (fill) lines.push(`    applyPaint(out_col, vec4(${fmt(fill.r)}, ${fmt(fill.g)}, ${fmt(fill.b)}, ${fmt(fill.a)}), d <= 0.0 ? 1.0 : 0.0);`);
-          if (stroke && strokeWidth > 0) lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), opOnion(d, ${fmt(strokeWidth * 0.5)}) <= 0.0 ? 1.0 : 0.0);`);
+          if (stroke && strokeWidth > 0) {
+            lines.push(`    vec2 outerR = vec2(${fmt(Math.max(0, rx))}, ${fmt(Math.max(0, ry))}) + vec2(${fmt(strokeWidth * 0.5)});`);
+            lines.push(`    vec2 innerR = max(vec2(0.0), vec2(${fmt(Math.max(0, rx))}, ${fmt(Math.max(0, ry))}) - vec2(${fmt(strokeWidth * 0.5)}));`);
+            lines.push(`    float outerD = sdEllipseViaCircle(lp - vec2(${fmt(cx)}, ${fmt(cy)}), outerR);`);
+            lines.push(`    float innerD = sdEllipseViaCircle(lp - vec2(${fmt(cx)}, ${fmt(cy)}), innerR);`);
+            lines.push(`    float outerInside = outerD <= 0.0 ? 1.0 : 0.0;`);
+            lines.push(`    float innerInside = innerD <= 0.0 ? 1.0 : 0.0;`);
+            lines.push(`    float strokeMask = max(0.0, outerInside - innerInside);`);
+            lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
+          }
           lines.push('  }');
           return;
         }
