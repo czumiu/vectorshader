@@ -244,7 +244,7 @@
     <div class="topbar">
       <div class="title-wrap">
         <strong>VectorShader</strong>
-        <span class="pill">v9 ellipse centered stroke thickness fix</span>
+        <span class="pill">v13 compound path stroke lines+quadratics</span>
       </div>
       <div class="actions">
         <input id="svgFileInput" type="file" accept=".svg,image/svg+xml" hidden />
@@ -860,11 +860,46 @@
           const d = node.getAttribute('d') || '';
           const rawSubpaths = parsePathSubpaths(d);
           const normalizedSubpaths = normalizePathSubpaths(rawSubpaths);
+          const strokePrimitives = [];
+          normalizedSubpaths.forEach((subpath) => {
+            subpath.strokeSegments.forEach((seg) => {
+              if (seg.type === 'line') {
+                strokePrimitives.push({
+                  kind: 'line',
+                  a: matApply(matrix, seg.p0),
+                  b: matApply(matrix, seg.p1)
+                });
+              } else if (seg.type === 'quad') {
+                strokePrimitives.push({
+                  kind: 'quad',
+                  a: matApply(matrix, seg.p0),
+                  b: matApply(matrix, seg.p1),
+                  c: matApply(matrix, seg.p2)
+                });
+              }
+            });
+          });
           return {
             ...base,
             sourcePathLength: d.length,
             rawSubpathCount: rawSubpaths.length,
-            normalizedSubpaths
+            normalizedSubpaths,
+            specialShape: strokePrimitives.length
+              ? { kind: 'path-stroke-primitives', segments: strokePrimitives }
+              : null
+          };
+        }
+
+        if (tag === 'line') {
+          const inv = matInvert(matrix);
+          return {
+            ...base,
+            specialShape: {
+              kind: 'segment',
+              a: { x: parseNumber(node.getAttribute('x1'), 0), y: parseNumber(node.getAttribute('y1'), 0) },
+              b: { x: parseNumber(node.getAttribute('x2'), 0), y: parseNumber(node.getAttribute('y2'), 0) },
+              inv
+            }
           };
         }
 
@@ -880,7 +915,10 @@
           return {
             ...base,
             rawSubpathCount: subpath.segments.length ? 1 : 0,
-            normalizedSubpaths: subpath.segments.length ? normalizePathSubpaths([subpath]) : []
+            normalizedSubpaths: subpath.segments.length ? normalizePathSubpaths([subpath]) : [],
+            specialShape: tag === 'polyline'
+              ? { kind: 'segment-list', points, inv: matInvert(matrix) }
+              : null
           };
         }
 
@@ -966,15 +1004,21 @@
       const fmt = (n) => Number(n).toFixed(6);
       const vb = model.viewBox || { x: 0, y: 0, width: 1, height: 1 };
       const supportedShapeCount = model.shapes.filter((shape) => {
-        const fill = colorStringToRgba(shape.paint?.fill);
-        return !!fill && !!shape.specialShape && (shape.specialShape.kind === 'rect' || shape.specialShape.kind === 'ellipse');
+        return !!shape.specialShape && (
+          shape.specialShape.kind === 'rect' ||
+          shape.specialShape.kind === 'ellipse' ||
+          shape.specialShape.kind === 'segment' ||
+          shape.specialShape.kind === 'segment-list' ||
+          shape.specialShape.kind === 'segment-list-world' ||
+          shape.specialShape.kind === 'path-stroke-primitives'
+        );
       }).length;
       const lines = [
         '// VectorShader (Godot special-shape pass)',
         `// source chars: ${model.sourceLength}`,
         `// shapes: ${model.shapeCount}`,
         `// supported emitted shapes: ${supportedShapeCount}`,
-        '// currently supported in shader emission: solid-fill rect/circle/ellipse',
+        '// currently supported in shader emission: rect/circle/ellipse fills + line/polyline/path(line+quad) strokes',
         '',
         'shader_type canvas_item;',
         '',
@@ -999,6 +1043,49 @@
         '  vec2 safeR = max(r, vec2(0.000001));',
         '  vec2 q = p / safeR;',
         '  return sdCircle(q, 1.0) * min(safeR.x, safeR.y);',
+        '}',
+        '',
+        'float sdSegment(vec2 p, vec2 a, vec2 b) {',
+        '  vec2 pa = p - a;',
+        '  vec2 ba = b - a;',
+        '  float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.000001), 0.0, 1.0);',
+        '  return length(pa - ba * h);',
+        '}',
+        '',
+        'float dot2(vec2 v) {',
+        '  return dot(v, v);',
+        '}',
+        '',
+        'float sdBezier(vec2 pos, vec2 A, vec2 B, vec2 C) {',
+        '  vec2 a = B - A;',
+        '  vec2 b = A - 2.0 * B + C;',
+        '  vec2 c = a * 2.0;',
+        '  vec2 d = A - pos;',
+        '  float bb = max(dot(b, b), 0.000001);',
+        '  float kk = 1.0 / bb;',
+        '  float kx = kk * dot(a, b);',
+        '  float ky = kk * (2.0 * dot(a, a) + dot(d, b)) / 3.0;',
+        '  float kz = kk * dot(d, a);',
+        '  float p = ky - kx * kx;',
+        '  float p3 = p * p * p;',
+        '  float q = kx * (2.0 * kx * kx - 3.0 * ky) + kz;',
+        '  float h = q * q + 4.0 * p3;',
+        '  float res = 0.0;',
+        '  if (h >= 0.0) {',
+        '    h = sqrt(h);',
+        '    vec2 x = (vec2(h, -h) - q) / 2.0;',
+        '    vec2 uv = sign(x) * pow(abs(x), vec2(1.0 / 3.0));',
+        '    float t = clamp(uv.x + uv.y - kx, 0.0, 1.0);',
+        '    res = dot2(d + (c + b * t) * t);',
+        '  } else {',
+        '    float z = sqrt(-p);',
+        '    float v = acos(q / (p * z * 2.0)) / 3.0;',
+        '    float m = cos(v);',
+        '    float n = sin(v) * 1.732050808;',
+        '    vec3 t = clamp(vec3(m + m, -n - m, n - m) * z - kx, 0.0, 1.0);',
+        '    res = min(dot2(d + (c + b * t.x) * t.x), dot2(d + (c + b * t.y) * t.y));',
+        '  }',
+        '  return sqrt(res);',
         '}',
         '',
         'float opOnion(float d, float r) {',
@@ -1091,12 +1178,77 @@
           return;
         }
 
+        if (shape.specialShape.kind === 'segment') {
+          const { a, b, inv } = shape.specialShape;
+          if (!(stroke && strokeWidth > 0)) {
+            lines.push(`  // segment ${idx + 1} skipped: requires solid stroke + stroke-width > 0`);
+            return;
+          }
+          lines.push(`  { // segment ${idx + 1}`);
+          lines.push(`    vec2 lp = vec2(${fmt(inv.a)}*p.x + ${fmt(inv.c)}*p.y + ${fmt(inv.e)}, ${fmt(inv.b)}*p.x + ${fmt(inv.d)}*p.y + ${fmt(inv.f)});`);
+          lines.push(`    float d = sdSegment(lp, vec2(${fmt(a.x)}, ${fmt(a.y)}), vec2(${fmt(b.x)}, ${fmt(b.y)}));`);
+          lines.push(`    float strokeMask = d <= ${fmt(strokeWidth * 0.5)} ? 1.0 : 0.0;`);
+          lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
+          lines.push('  }');
+          return;
+        }
+
+        if (shape.specialShape.kind === 'segment-list') {
+          const { points, inv } = shape.specialShape;
+          if (!(stroke && strokeWidth > 0)) {
+            lines.push(`  // polyline ${idx + 1} skipped: requires solid stroke + stroke-width > 0`);
+            return;
+          }
+          if (!Array.isArray(points) || points.length < 2) {
+            lines.push(`  // polyline ${idx + 1} skipped: not enough points`);
+            return;
+          }
+          lines.push(`  { // polyline ${idx + 1}`);
+          lines.push(`    vec2 lp = vec2(${fmt(inv.a)}*p.x + ${fmt(inv.c)}*p.y + ${fmt(inv.e)}, ${fmt(inv.b)}*p.x + ${fmt(inv.d)}*p.y + ${fmt(inv.f)});`);
+          lines.push('    float d = 1e20;');
+          for (let s = 0; s + 1 < points.length; s += 1) {
+            const p0 = points[s];
+            const p1 = points[s + 1];
+            lines.push(`    d = min(d, sdSegment(lp, vec2(${fmt(p0.x)}, ${fmt(p0.y)}), vec2(${fmt(p1.x)}, ${fmt(p1.y)})));`);
+          }
+          lines.push(`    float strokeMask = d <= ${fmt(strokeWidth * 0.5)} ? 1.0 : 0.0;`);
+          lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
+          lines.push('  }');
+          return;
+        }
+
+        if (shape.specialShape.kind === 'path-stroke-primitives') {
+          const { segments } = shape.specialShape;
+          if (!(stroke && strokeWidth > 0)) {
+            lines.push(`  // path ${idx + 1} skipped: requires solid stroke + stroke-width > 0`);
+            return;
+          }
+          if (!Array.isArray(segments) || segments.length < 1) {
+            lines.push(`  // path ${idx + 1} skipped: no supported stroke primitives found`);
+            return;
+          }
+          lines.push(`  { // path-stroke-primitives ${idx + 1}`);
+          lines.push('    float d = 1e20;');
+          for (let s = 0; s < segments.length; s += 1) {
+            const seg = segments[s];
+            if (seg.kind === 'line') {
+              lines.push(`    d = min(d, sdSegment(p, vec2(${fmt(seg.a.x)}, ${fmt(seg.a.y)}), vec2(${fmt(seg.b.x)}, ${fmt(seg.b.y)})));`);
+            } else if (seg.kind === 'quad') {
+              lines.push(`    d = min(d, sdBezier(p, vec2(${fmt(seg.a.x)}, ${fmt(seg.a.y)}), vec2(${fmt(seg.b.x)}, ${fmt(seg.b.y)}), vec2(${fmt(seg.c.x)}, ${fmt(seg.c.y)})));`);
+            }
+          }
+          lines.push(`    float strokeMask = d <= ${fmt(strokeWidth * 0.5)} ? 1.0 : 0.0;`);
+          lines.push(`    applyPaint(out_col, vec4(${fmt(stroke.r)}, ${fmt(stroke.g)}, ${fmt(stroke.b)}, ${fmt(stroke.a)}), strokeMask);`);
+          lines.push('  }');
+          return;
+        }
+
         lines.push(`  // shape ${idx + 1} (${shape.tag}) skipped: unsupported special shape kind`);
       });
 
       lines.push('  COLOR = out_col;');
       if (supportedShapeCount === 0) {
-        lines.push('  // No supported solid-fill rect/circle/ellipse shapes were found.');
+        lines.push('  // No currently supported rect/circle/ellipse/segment shapes were found.');
       }
       lines.push('}');
       return lines.join('\n');
