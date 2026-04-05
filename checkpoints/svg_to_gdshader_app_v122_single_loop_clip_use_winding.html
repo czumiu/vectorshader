@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG to Godot Shader - v122</title>
+  <style>
+    :root { --bg:#0a0d14; --bg-2:#0f1522; --panel:rgba(18,24,38,.9); --text:#ecf2ff; --muted:#9cabcb; --line:rgba(155,177,230,.14); --line-strong:rgba(155,177,230,.24); --accent:#7cc4ff; --shadow-soft:0 10px 30px rgba(0,0,0,.22); --radius:18px; }
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);min-height:100vh;background:radial-gradient(circle at top left,rgba(122,196,255,.1),transparent 26%),radial-gradient(circle at bottom right,rgba(77,226,197,.08),transparent 30%),linear-gradient(180deg,var(--bg) 0%,var(--bg-2) 100%)}
+    .app{display:grid;grid-template-columns:350px 1fr;min-height:100vh;gap:18px;padding:18px}.sidebar{display:flex;flex-direction:column;gap:14px;min-height:0}.main{display:grid;grid-template-rows:minmax(360px,1fr) minmax(280px,1fr);gap:14px;min-height:0}.top-split{display:grid;grid-template-columns:minmax(320px,1fr) minmax(320px,1fr);gap:14px;min-height:0}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;backdrop-filter:blur(14px);box-shadow:var(--shadow-soft);min-height:0}
+    h1,h2,p{margin:0} h1{font-size:24px;font-weight:750;letter-spacing:-.03em} h2{font-size:11px;margin-bottom:10px;color:var(--muted);font-weight:700;letter-spacing:.14em;text-transform:uppercase}.stack{display:flex;flex-direction:column;gap:10px;min-height:0}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap} label{display:flex;flex-direction:column;gap:6px;color:#dbe6ff;font-weight:560}
+    textarea,input[type="number"],select{width:100%;background:linear-gradient(180deg,rgba(27,35,55,.96),rgba(22,28,44,.96));color:var(--text);border:1px solid var(--line);border-radius:14px;padding:11px 13px;resize:vertical;outline:none} textarea{min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;line-height:1.45} #fileInput{display:none}.editor-textarea{min-height:460px}.code-output{height:100%;min-height:320px;white-space:pre;word-break:normal}    button{border:none;border-radius:14px;padding:11px 15px;cursor:pointer;font-weight:720;transition:transform 120ms ease,filter 120ms ease,opacity 120ms ease} button:hover{transform:translateY(-1px);filter:brightness(1.03)} button:not(.secondary){color:#07111d;background:var(--accent);box-shadow:0 10px 24px rgba(124,196,255,.18)} button.secondary{color:var(--text);background:linear-gradient(180deg,rgba(45,56,84,.96),rgba(34,42,64,.96));border:1px solid var(--line)} button:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}.big-action{width:100%;padding:14px 16px;font-size:15px}
+    .hint{color:var(--muted)} .good{color:#97f0ba} .bad{color:#ff909b}.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.toolbar .row{gap:8px}.preview-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.preview-toolbar .row{gap:8px}.preview-shell{display:flex;flex-direction:column;gap:10px;min-height:460px}.preview-viewport{position:relative;flex:1;min-height:420px;background:linear-gradient(45deg,rgba(255,255,255,.05) 25%,transparent 25%),linear-gradient(-45deg,rgba(255,255,255,.05) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(255,255,255,.05) 75%),linear-gradient(-45deg,transparent 75%,rgba(255,255,255,.05) 75%),linear-gradient(180deg,rgba(18,24,38,.82),rgba(12,17,28,.96));background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0,0 0;border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:grab}.preview-viewport.dragging{cursor:grabbing}.preview-stage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}.preview-stage svg{display:block;filter:drop-shadow(0 10px 26px rgba(0,0,0,.28));user-select:none;-webkit-user-drag:none}.grid-overlay{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}.grid-overlay rect{shape-rendering:crispEdges}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:#d6e4ff;background:rgba(255,255,255,.04);font-size:12px}.editor-shell{display:grid;grid-template-columns:auto 1fr;min-height:460px;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(27,35,55,.96),rgba(22,28,44,.96))}.editor-gutter{min-width:48px;padding:12px 8px;background:rgba(11,15,24,.65);border-right:1px solid var(--line);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--muted);text-align:right;overflow:hidden;user-select:none;white-space:pre}.editor-textarea{min-height:460px;height:100%;border:none;border-radius:0;background:transparent;resize:none;overflow:auto;white-space:pre-wrap;word-break:break-word;padding:12px 13px}.editor-textarea:focus{outline:none}.shader-shell{height:320px;min-height:320px}.shader-shell .editor-textarea{min-height:320px;height:320px;white-space:pre;word-break:normal}.shader-shell .editor-gutter{min-width:56px}.shader-shell .editor-gutter,.shader-shell .editor-textarea{line-height:1.45}.preview-toolbar button.icon{min-width:42px;padding:11px 12px}.compact{padding:8px 12px}
+    @media (max-width:1200px){.app{grid-template-columns:1fr}.top-split{grid-template-columns:1fr}.main{grid-template-rows:auto auto}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="card stack"><h2>Settings</h2><button id="importBtn" class="big-action">Import SVG</button><input id="fileInput" type="file" accept=".svg,image/svg+xml" /><p id="status" class="hint">Waiting for SVG.</p><label>Page fit<select id="fitMode"><option value="fit">Shrink to fit</option><option value="stretch">Stretch to fit</option><option value="fill">Scale to fill</option></select></label><label>Cubic handling<select id="cubicMode"><option value="quadratic">Approximate cubics by quadratics</option><option value="flatten">Flatten cubics to lines</option></select></label><label>Arc handling<select id="arcMode"><option value="quadratic">Approximate arcs by quadratics</option><option value="flatten">Flatten arcs</option></select></label><label>Cubic steps<input id="cubicSteps" type="number" min="2" max="256" step="1" value="16" /></label><label>Arc steps<input id="arcSteps" type="number" min="2" max="256" step="1" value="16" /></label><label>Fill flatten steps<input id="quadSteps" type="number" min="2" max="256" step="1" value="12" /></label><label>Fill rule<select id="fillRule"><option value="evenodd">evenodd</option><option value="nonzero">nonzero</option></select></label><label>AA strength<div class="row" style="align-items:center;gap:10px"><input id="aaStrength" type="range" min="0" max="100" step="1" value="100" style="flex:1" /><span id="aaStrengthLabel" class="pill">100%</span></div></label><label>Grid tile size<input id="gridTileSize" type="number" min="4" max="128" step="4" value="16" /></label></div>
+      <div class="card stack"><h2>Debug</h2><div class="row"><button id="clearLogBtn" class="secondary">Clear log</button><button id="runBootBtn" class="secondary">Run boot again</button></div><textarea id="debugLog" readonly spellcheck="false" style="min-height:220px;"></textarea></div>
+    </aside>
+    <main class="main">
+      <div class="top-split">
+        <div class="card stack"><div class="toolbar"><h2 style="margin:0">SVG editor</h2><div class="row"><button id="optimizeSvgBtn" class="secondary compact">Optimize</button><button id="prettifySvgBtn" class="secondary compact">Prettify</button><button id="copySvgBtn" class="secondary compact">Copy SVG</button><button id="downloadSvgBtn" class="secondary compact">Download SVG</button><button id="clearEditorBtn" class="secondary compact">Clear</button></div></div><div class="editor-shell"><div id="editorGutter" class="editor-gutter">1</div><textarea id="svgInput" class="editor-textarea" spellcheck="false" placeholder="Paste raw SVG here"></textarea></div></div>
+        <div class="card stack"><div class="preview-toolbar"><h2 style="margin:0">SVG preview</h2><div class="row"><label style="flex-direction:row;align-items:center;gap:8px;font-weight:600"><input id="gridAccel" type="checkbox" style="width:auto" /> Grid acceleration (flat art)</label><label style="min-width:220px">Grid acceptance<select id="gridAcceptance"><option value="green">Green only (strict)</option><option value="yellow">Green + Yellow</option><option value="orange" selected>Green + Yellow + Orange</option></select></label><label style="min-width:220px">Grid overlay opacity<div class="row" style="align-items:center;gap:10px"><input id="gridOverlayOpacity" type="range" min="0" max="100" step="1" value="100" style="flex:1" /><span id="gridOverlayOpacityLabel" class="pill">100%</span></div></label><label style="flex-direction:row;align-items:center;gap:8px;font-weight:600"><input id="showTopologyOverlay" type="checkbox" style="width:auto" /> Show topology overlay</label><label style="flex-direction:row;align-items:center;gap:8px;font-weight:600"><input id="showClipOverlay" type="checkbox" style="width:auto" /> Show clip overlay</label><label style="min-width:220px">Pipeline debug mode<select id="pipelineDebugMode"><option value="normal">Normal preview</option><option value="clip_mask_only">Clip mask only</option><option value="clip_inside_only">Clip inside only</option><option value="clip_edge_only">Clip edge only</option></select></label><button id="copyPipelineReportBtn" class="secondary compact">Copy pipeline report</button><label style="flex-direction:row;align-items:center;gap:8px;font-weight:600"><input id="showClipMaskPreview" type="checkbox" style="width:auto" /> Show clip mask preview</label><button id="zoomOutBtn" class="secondary icon">−</button><button id="fitPreviewBtn" class="secondary">Fit</button><button id="resetPreviewBtn" class="secondary">100%</button><button id="zoomInBtn" class="secondary icon">+</button><span id="zoomLabel" class="pill">100%</span></div></div><div class="preview-shell"><div id="previewViewport" class="preview-viewport"><div id="previewStage" class="preview-stage"></div></div><div class="row" id="summaryRow"></div><pre id="topologyReport" style="margin:10px 0 0; padding:12px; min-height:96px; max-height:260px; overflow:auto; white-space:pre-wrap; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(255,255,255,.03); color:var(--muted)"></pre></div></div>
+      </div>
+      <div class="card stack"><div class="toolbar"><h2 style="margin:0">Shader output</h2><div class="row"><button id="copyBtn" class="secondary" disabled>Copy shader</button></div></div><div class="editor-shell shader-shell"><div id="outputGutter" class="editor-gutter">1</div><textarea id="output" class="editor-textarea code-output" spellcheck="false"></textarea></div></div>
+    </main>
+  </div>
+  <script>
+    const DEMO_SVG = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220"><defs><linearGradient id="sky" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0f172a"/><stop offset="50%" stop-color="#2563eb"/><stop offset="100%" stop-color="#93c5fd"/></linearGradient><radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff7cc"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs><rect x="10" y="10" width="300" height="200" rx="22" fill="url(#sky)" stroke="#dbeafe" stroke-width="6"/><path d="M 34 175 A 70 70 0 0 1 140 85 L 140 175 Z" fill="#16a34a" stroke="#14532d" stroke-width="5"/><path d="M 156 175 C 180 120, 228 120, 252 175" fill="none" stroke="#f8fafc" stroke-width="10"/><circle cx="236" cy="64" r="26" fill="url(#sun)" stroke="#7c2d12" stroke-width="4"/></svg>`;
+
+    const state={svgText:'',parsed:null,generated:'',runToken:0};
+    const el={fileInput:document.getElementById('fileInput'),svgInput:document.getElementById('svgInput'),importBtn:document.getElementById('importBtn'),status:document.getElementById('status'),previewViewport:document.getElementById('previewViewport'),previewStage:document.getElementById('previewStage'),summaryRow:document.getElementById('summaryRow'),topologyReport:document.getElementById('topologyReport'),fitPreviewBtn:document.getElementById('fitPreviewBtn'),resetPreviewBtn:document.getElementById('resetPreviewBtn'),zoomInBtn:document.getElementById('zoomInBtn'),zoomOutBtn:document.getElementById('zoomOutBtn'),zoomLabel:document.getElementById('zoomLabel'),editorGutter:document.getElementById('editorGutter'),optimizeSvgBtn:document.getElementById('optimizeSvgBtn'),prettifySvgBtn:document.getElementById('prettifySvgBtn'),copySvgBtn:document.getElementById('copySvgBtn'),downloadSvgBtn:document.getElementById('downloadSvgBtn'),clearEditorBtn:document.getElementById('clearEditorBtn'),fitMode:document.getElementById('fitMode'),cubicMode:document.getElementById('cubicMode'),arcMode:document.getElementById('arcMode'),cubicSteps:document.getElementById('cubicSteps'),arcSteps:document.getElementById('arcSteps'),quadSteps:document.getElementById('quadSteps'),fillRule:document.getElementById('fillRule'),gridAccel:document.getElementById('gridAccel'),gridAcceptance:document.getElementById('gridAcceptance'),gridOverlayOpacity:document.getElementById('gridOverlayOpacity'),gridOverlayOpacityLabel:document.getElementById('gridOverlayOpacityLabel'),showTopologyOverlay:document.getElementById('showTopologyOverlay'),showClipOverlay:document.getElementById('showClipOverlay'),pipelineDebugMode:document.getElementById('pipelineDebugMode'),copyPipelineReportBtn:document.getElementById('copyPipelineReportBtn'),showClipMaskPreview:document.getElementById('showClipMaskPreview'),aaStrength:document.getElementById('aaStrength'),aaStrengthLabel:document.getElementById('aaStrengthLabel'),gridTileSize:document.getElementById('gridTileSize'),copyBtn:document.getElementById('copyBtn'),outputGutter:document.getElementById('outputGutter'),output:document.getElementById('output'),clearLogBtn:document.getElementById('clearLogBtn'),runBootBtn:document.getElementById('runBootBtn'),debugLog:document.getElementById('debugLog')};
+    const previewState={scale:1,tx:0,ty:0,contentW:320,contentH:220,dragging:false,lastX:0,lastY:0,hasContent:false};
+
+    function safeAppendLog(line){
+      try {
+        if (!el || !el.debugLog) return;
+        el.debugLog.value += (el.debugLog.value ? '\n' : '') + line;
+        el.debugLog.scrollTop = el.debugLog.scrollHeight;
+      } catch (_) {}
+    }
+    function logDebug(message,data){
+      const stamp=new Date().toLocaleTimeString();
+      let line=`[${stamp}] ${message}`;
+      if(data!==undefined){
+        try{line+=` ${typeof data==='string'?data:JSON.stringify(data)}`}
+        catch{line+=` ${String(data)}`}
+      }
+      safeAppendLog(line);
+      try { console.log('[svg2gdshader]',message,data??''); } catch(_) {}
+    }
+    window.addEventListener('error',e=>{ safeAppendLog(`[startup-error] ${e.message} @ ${e.filename}:${e.lineno}:${e.colno}`); });
+    window.addEventListener('unhandledrejection',e=>{ safeAppendLog(`[startup-rejection] ${String(e.reason)}`); });
+    logDebug('script:loaded:top');
+
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), fmt=n=>Number(n).toFixed(6), lerp=(a,b,t)=>a+(b-a)*t, vecLerp=(a,b,t)=>({x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)}), quadPoint=(a,b,c,t)=>{const ab=vecLerp(a,b,t),bc=vecLerp(b,c,t);return vecLerp(ab,bc,t)}, cubicPoint=(a,b,c,d,t)=>{const ab=vecLerp(a,b,t),bc=vecLerp(b,c,t),cd=vecLerp(c,d,t),abbc=vecLerp(ab,bc,t),bccd=vecLerp(bc,cd,t);return vecLerp(abbc,bccd,t)}, vec2Code=p=>`vec2(${fmt(p.x)}, ${fmt(p.y)})`; const BASE_STROKE_TOL=2.25;
+
+    function setStatus(message,kind='hint'){ try{el.status.className=kind; el.status.textContent=message;}catch(_){} logDebug('status:set',{message,kind}); }
+    async function tryAutoCopyShader(){
+      if(!state.generated) return;
+      try{
+        await navigator.clipboard.writeText(state.generated);
+        logDebug('shader:auto-copied',{shaderLength:state.generated.length});
+      }catch(err){
+        logDebug('shader:auto-copy:skipped',{message:err?.message||String(err)});
+      }
+    }
+    function updateEditorGutter(){
+      const text = el.svgInput.value || '';
+      const lines = Math.max(1, text.split('\n').length);
+      let out = '';
+      for(let i=1;i<=lines;i++) out += (i===1?'':'\n') + i;
+      el.editorGutter.textContent = out;
+      el.editorGutter.scrollTop = el.svgInput.scrollTop;
+    }
+    function updateOutputGutter(){
+      const text = el.output.value || '';
+      const lines = Math.max(1, text.split('\n').length);
+      let out = '';
+      for(let i=1;i<=lines;i++) out += (i===1?'':'\n') + i;
+      el.outputGutter.textContent = out;
+      el.outputGutter.scrollTop = el.output.scrollTop;
+    }
+    function trimFloatString(numStr){
+      const n = Number(numStr);
+      if(!Number.isFinite(n)) return numStr;
+      let s = n.toFixed(3).replace(/\.?0+$/,'');
+      if(s === '-0') s = '0';
+      if(s.startsWith('0.')) s = s.slice(1);
+      if(s.startsWith('-0.')) s = '-' + s.slice(2);
+      return s;
+    }
+    function normalizeHexColor(str){
+      return str.replace(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g, m => {
+        let hex = m.slice(1).toLowerCase();
+        if(hex.length===6 && hex[0]===hex[1] && hex[2]===hex[3] && hex[4]===hex[5]) hex = hex[0]+hex[2]+hex[4];
+        return '#' + hex;
+      });
+    }
+    if(el.pipelineDebugMode){
+      ['change','input','click'].forEach(evt=>el.pipelineDebugMode.addEventListener(evt,()=>{ if(state.svgText) renderPreview(state.svgText); if(state.parsed){ renderSummary(state.parsed); renderTopologyReport(state.parsed); } }));
+    }
+    if(el.copyPipelineReportBtn){
+      el.copyPipelineReportBtn.addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(el.topologyReport ? el.topologyReport.textContent : ''); setStatus('Pipeline report copied.', 'good'); } catch(err){ setStatus('Could not copy pipeline report.', 'bad'); } });
+    }
+    if(el.showClipOverlay){
+      ['change','input','click'].forEach(evt=>el.showClipOverlay.addEventListener(evt,()=>{ if(state.svgText) renderPreview(state.svgText); if(state.parsed){ renderSummary(state.parsed); renderTopologyReport(state.parsed); } }));
+    }
+    if(el.showClipMaskPreview){
+      ['change','input','click'].forEach(evt=>el.showClipMaskPreview.addEventListener(evt,()=>{ if(state.svgText) renderPreview(state.svgText); if(state.parsed){ renderSummary(state.parsed); renderTopologyReport(state.parsed); } }));
+    }
+    function prettifySvgText(svgText){
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText,'image/svg+xml');
+      if(doc.querySelector('parsererror')) throw new Error('Cannot prettify invalid SVG.');
+      const serializeNode = (node, depth=0) => {
+        if(node.nodeType===Node.TEXT_NODE){
+          const t = node.textContent.trim();
+          return t ? `${'  '.repeat(depth)}${t}\n` : '';
+        }
+        if(node.nodeType!==Node.ELEMENT_NODE) return '';
+        const attrs = [...node.attributes].map(a=>`${a.name}="${a.value}"`).join(' ');
+        const tag = node.tagName;
+        const open = attrs ? `<${tag} ${attrs}>` : `<${tag}>`;
+        if(!node.children.length && !node.textContent.trim()) return `${'  '.repeat(depth)}${open.replace(/>$/,' />')}\n`;
+        let body = '';
+        for(const child of [...node.childNodes]) body += serializeNode(child, depth+1);
+        if(!body.trim()) return `${'  '.repeat(depth)}${open}${node.textContent.trim()}</${tag}>\n`;
+        return `${'  '.repeat(depth)}${open}\n${body}${'  '.repeat(depth)}</${tag}>\n`;
+      };
+      return `<?xml version="1.0" encoding="UTF-8"?>\n` + serializeNode(doc.documentElement).trim() + '\n';
+    }
+    function optimizeSvgText(svgText){
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText,'image/svg+xml');
+      if(doc.querySelector('parsererror')) throw new Error('Cannot optimize invalid SVG.');
+      const walk = node => {
+        if(node.nodeType!==Node.ELEMENT_NODE) return;
+        for(const child of [...node.children]) walk(child);
+        if(node.hasAttribute('style')){
+          const style = parseStyleString(node.getAttribute('style'));
+          for(const [k,v] of Object.entries(style)) if(v && !node.hasAttribute(k)) node.setAttribute(k,v);
+          node.removeAttribute('style');
+        }
+        if(node.tagName.toLowerCase()==='g' && !node.attributes.length && !node.children.length) node.remove();
+      };
+      walk(doc.documentElement);
+      let xml = new XMLSerializer().serializeToString(doc.documentElement);
+      xml = xml.replace(/>\s+</g,'><').replace(/\s{2,}/g,' ');
+      xml = xml.replace(/[-+]?\d*\.\d+|[-+]?\d+\.?/g, m => trimFloatString(m));
+      xml = normalizeHexColor(xml);
+      xml = xml.replace(/ fill="white"/g,' fill="#fff"').replace(/ fill="black"/g,' fill="#000"');
+      return xml.trim();
+    }
+
+    function rgbaByteKey(r,g,b,a){ return `${r},${g},${b},${a}`; }
+    function normalizeSvgForGridRaster(svgText, parsed){
+      const vb = parsed.viewBox;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText, 'image/svg+xml');
+      const parserError = doc.querySelector('parsererror');
+      if(parserError) throw new Error('Cannot normalize invalid SVG for grid raster.');
+      const svg = doc.documentElement;
+      if(!svg || svg.tagName.toLowerCase() !== 'svg') throw new Error('Grid raster source is not an SVG root.');
+      svg.setAttribute('viewBox', `${trimFloatString(vb.x)} ${trimFloatString(vb.y)} ${trimFloatString(vb.width)} ${trimFloatString(vb.height)}`);
+      svg.setAttribute('width', trimFloatString(vb.width));
+      svg.setAttribute('height', trimFloatString(vb.height));
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.removeAttribute('x');
+      svg.removeAttribute('y');
+      for(const node of [svg, ...svg.querySelectorAll('*')]){
+        if(node.nodeType!==Node.ELEMENT_NODE) continue;
+        const tag = (node.tagName||'').toLowerCase();
+        if(tag==='defs' || tag==='clipPath' || tag==='mask' || tag==='linearGradient' || tag==='radialGradient' || tag==='pattern') continue;
+        const style = parseStyleString(node.getAttribute('style')||'');
+        style['stroke-linecap'] = 'round';
+        if(style.stroke && style.stroke !== 'none') node.setAttribute('style', serializeStyleObject(style));
+        node.setAttribute('stroke-linecap','round');
+      }
+      return new XMLSerializer().serializeToString(svg);
+    }
+    async function rasterizeSvgForGrid(svgText, parsed){
+      const vb=parsed.viewBox;
+      const maxDim = 1536;
+      const oversample = 2;
+      const rasterW = Math.max(1, Math.min(maxDim, Math.ceil(vb.width * oversample)));
+      const rasterH = Math.max(1, Math.min(maxDim, Math.ceil(vb.height * oversample)));
+      const normalizedSvgText = normalizeSvgForGridRaster(svgText, parsed);
+      const blob = new Blob([normalizedSvgText], {type:'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      try {
+        const img = new Image();
+        await new Promise((resolve,reject)=>{
+          img.onload = ()=>resolve();
+          img.onerror = ()=>reject(new Error('Could not rasterize normalized SVG for grid acceleration.'));
+          img.src = url;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = rasterW;
+        canvas.height = rasterH;
+        const ctx = canvas.getContext('2d', {willReadFrequently:true});
+        ctx.clearRect(0,0,rasterW,rasterH);
+        ctx.drawImage(img,0,0,rasterW,rasterH);
+        return {canvas, rasterW, rasterH, normalizedSvgTextLength: normalizedSvgText.length};
+      } finally { URL.revokeObjectURL(url); }
+    }
+    function mergeTileRuns(rowRuns, vb){
+      const active = new Map();
+      const rects = [];
+      const flushInactive = (nextKeys)=>{
+        for(const [key,rect] of [...active.entries()]){
+          if(!nextKeys.has(key)){ rects.push(rect); active.delete(key); }
+        }
+      };
+      for(const runs of rowRuns){
+        const nextKeys = new Set();
+        for(const run of runs){
+          const key = `${run.kind}|${run.color||''}|${run.x}|${run.w}`;
+          nextKeys.add(key);
+          if(active.has(key)) active.get(key).h += run.h;
+          else active.set(key,{kind:run.kind, x:vb.x + run.x, y:vb.y + run.y, w:run.w, h:run.h, color:run.color||null});
+        }
+        flushInactive(nextKeys);
+      }
+      for(const rect of active.values()) rects.push(rect);
+      return rects;
+    }
+
+    function solidShapeColorKey(shape){
+      if(!shape || !shape.fill || shape.fill.type!=='solid' || !shape.fill.color) return null;
+      if((shape.opacity ?? 1) < 0.999999) return null;
+      if((shape.fillOpacity ?? 1) < 0.999999) return null;
+      const fillA = (shape.fill.color.a == null ? 1 : shape.fill.color.a);
+      if(fillA < 0.999999) return null;
+      if(shape.stroke && shape.strokeWidth > 0.000001 && ((shape.strokeOpacity ?? 1) * (shape.opacity ?? 1)) > 0.000001) return null;
+      if(shape.clipGroups && shape.clipGroups.length) return null;
+      return rgbaByteKey(
+        Math.round(shape.fill.color.r),
+        Math.round(shape.fill.color.g),
+        Math.round(shape.fill.color.b),
+        255
+      );
+    }
+    function boundsContainPoint(bounds, p){
+      if(!bounds) return false;
+      return p.x >= bounds.cullMinX && p.x <= bounds.cullMaxX && p.y >= bounds.cullMinY && p.y <= bounds.cullMaxY;
+    }
+    function boundsIntersectTile(bounds, x, y, w, h){
+      if(!bounds) return false;
+      const x1 = x + w, y1 = y + h;
+      return !(bounds.cullMaxX < x || bounds.cullMinX > x1 || bounds.cullMaxY < y || bounds.cullMinY > y1);
+    }
+    function getTileCornerPoints(parsed, x, y, w, h){
+      const eps = 0.0001;
+      const vx = parsed.viewBox.x;
+      const vy = parsed.viewBox.y;
+      return [
+        {x:vx + x + eps, y:vy + y + eps},
+        {x:vx + x + w - eps, y:vy + y + eps},
+        {x:vx + x + eps, y:vy + y + h - eps},
+        {x:vx + x + w - eps, y:vy + y + h - eps}
+      ];
+    }
+    function gatherTileCornerShapeIds(parsed, x, y, w, h){
+      const pts = getTileCornerPoints(parsed, x, y, w, h);
+      const ids = new Set();
+      for(let i=0;i<parsed.shapes.length;i++){
+        const shape = parsed.shapes[i];
+        const b = shape.bounds;
+        if(!b) continue;
+        for(const p of pts){
+          if(boundsContainPoint(b, p)){ ids.add(i); break; }
+        }
+      }
+      return ids;
+    }
+    function tileCanBeSolidByShapes(parsed, x, y, w, h, colorKey){
+      const ids = gatherTileCornerShapeIds(parsed, x, y, w, h);
+      if(ids.size === 0) return false;
+      for(const i of ids){
+        const shapeColor = solidShapeColorKey(parsed.shapes[i]);
+        if(shapeColor !== colorKey) return false;
+      }
+      for(let i=0;i<parsed.shapes.length;i++){
+        if(ids.has(i)) continue;
+        const shape = parsed.shapes[i];
+        if(boundsIntersectTile(shape.bounds, parsed.viewBox.x + x, parsed.viewBox.y + y, w, h)) return false;
+      }
+      return true;
+    }
+    function sampleOutsideBorderStats(data, rasterW, rasterH, px0, py0, px1, py1, rgba, maxMargin=2){
+      const stats = {checked:0, matches:0, mismatches:0, opaqueMismatches:0};
+      if(!rgba) return stats;
+      const tr = rgba[0], tg = rgba[1], tb = rgba[2], ta = rgba[3];
+      const seen = new Set();
+      function samplePixel(px, py){
+        if(px < 0 || py < 0 || px >= rasterW || py >= rasterH) return;
+        const key = px + ',' + py;
+        if(seen.has(key)) return;
+        seen.add(key);
+        const idx = (py * rasterW + px) * 4;
+        const r = data[idx], g = data[idx+1], b = data[idx+2], a = data[idx+3];
+        stats.checked++;
+        if(r === tr && g === tg && b === tb && a === ta){
+          stats.matches++;
+        } else {
+          stats.mismatches++;
+          if(a > 0) stats.opaqueMismatches++;
+        }
+      }
+      const margin = clamp(parseInt(maxMargin,10) || 2, 1, 4);
+      for(let d=1; d<=margin; d++){
+        const top = py0 - d;
+        const bottom = py1 - 1 + d;
+        const left = px0 - d;
+        const right = px1 - 1 + d;
+        for(let px=px0-d; px<=px1-1+d; px++){
+          samplePixel(px, top);
+          samplePixel(px, bottom);
+        }
+        for(let py=py0-d+1; py<=py1-1+d-1; py++){
+          samplePixel(left, py);
+          samplePixel(right, py);
+        }
+      }
+      return stats;
+    }
+    function boundsCoverTile(bounds, tileX, tileY, w, h){
+      if(!bounds) return false;
+      return bounds.x0 <= tileX && bounds.y0 <= tileY && bounds.x1 >= tileX + w && bounds.y1 >= tileY + h;
+    }
+    function classifyUniformOpaqueTileSafety(parsed, x, y, w, h, colorKey, borderStats){
+      if(tileCanBeSolidByShapes(parsed, x, y, w, h, colorKey)) return 'accepted';
+      const borderPass = !!(borderStats && borderStats.checked > 0 && borderStats.opaqueMismatches === 0);
+      if(!borderPass) return null;
+      const tileX = parsed.viewBox.x + x;
+      const tileY = parsed.viewBox.y + y;
+      let sameColorFullCoverCount = 0;
+      for(let i=0;i<parsed.shapes.length;i++){
+        const shape = parsed.shapes[i];
+        if(!boundsCoverTile(shape.bounds, tileX, tileY, w, h)) continue;
+        const shapeColor = solidShapeColorKey(shape);
+        if(shapeColor === colorKey) sameColorFullCoverCount++;
+      }
+      if(sameColorFullCoverCount === 1) return 'single';
+      if(sameColorFullCoverCount > 1) return 'risky';
+      return 'risky';
+    }
+    function gridAcceptanceAllows(kind, acceptance){
+      const mode = acceptance || 'orange';
+      if(kind === 'accepted') return true;
+      if(kind === 'single') return mode === 'yellow' || mode === 'orange';
+      if(kind === 'risky') return mode === 'orange';
+      return false;
+    }
+
+    async function buildGridAcceleration(svgText, parsed, opts){
+      if(!opts.gridAccel) return null;
+      const tileSize = clamp(parseInt(opts.gridTileSize || '16',10), 4, 128);
+      const vb = parsed.viewBox;
+      if(vb.width <= 0 || vb.height <= 0) return null;
+      const {canvas, rasterW, rasterH, normalizedSvgTextLength} = await rasterizeSvgForGrid(svgText, parsed);
+      const data = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0,0,rasterW,rasterH).data;
+      const scaleX = rasterW / vb.width;
+      const scaleY = rasterH / vb.height;
+      const cols = Math.ceil(vb.width / tileSize);
+      const rows = Math.ceil(vb.height / tileSize);
+
+      const acceptedRuns = [];
+      const singleRuns = [];
+      const riskyRuns = [];
+      const unsafeRuns = [];
+      const emptyRuns = [];
+
+      let solidTiles = 0;
+      let singleShapeTiles = 0;
+      let riskyTiles = 0;
+      let unsafeTiles = 0;
+      let emptyTiles = 0;
+      let translucentUniformTiles = 0;
+      let borderPixelsChecked = 0;
+      let borderPixelsMatched = 0;
+      let borderPixelsOpaqueMismatch = 0;
+
+      function pushRun(runs, currentRunRef, kind, color, x, y, w, h){
+        let currentRun = currentRunRef.current;
+        if(currentRun && currentRun.kind === kind && currentRun.color === color && currentRun.x + currentRun.w === x){
+          currentRun.w += w;
+        } else {
+          currentRun = {kind, color, x, y, w, h};
+          runs.push(currentRun);
+        }
+        currentRunRef.current = currentRun;
+      }
+
+      for(let ty=0; ty<rows; ty++){
+        const y = ty * tileSize;
+        const h = Math.min(tileSize, vb.height - y);
+        const py0 = Math.max(0, Math.floor(y * scaleY));
+        const py1 = Math.min(rasterH, Math.ceil((y + h) * scaleY));
+
+        const acceptedRow = [];
+        const singleRow = [];
+        const riskyRow = [];
+        const unsafeRow = [];
+        const emptyRow = [];
+        const accRef = {current:null}, singleRef = {current:null}, riskyRef = {current:null}, unsafeRef = {current:null}, empRef = {current:null};
+
+        for(let tx=0; tx<cols; tx++){
+          const x = tx * tileSize;
+          const w = Math.min(tileSize, vb.width - x);
+          const px0 = Math.max(0, Math.floor(x * scaleX));
+          const px1 = Math.min(rasterW, Math.ceil((x + w) * scaleX));
+
+          let same = true;
+          let empty = true;
+          let first = null;
+          for(let py=py0; py<py1 && same; py++){
+            for(let px=px0; px<px1; px++){
+              const idx = (py * rasterW + px) * 4;
+              const r = data[idx], g = data[idx+1], b = data[idx+2], a = data[idx+3];
+              if(first == null){ first = [r,g,b,a]; }
+              else if(r!==first[0] || g!==first[1] || b!==first[2] || a!==first[3]){ same = false; break; }
+              if(a !== 0) empty = false;
+            }
+          }
+
+          if(same && first){
+            const colorKey = rgbaByteKey(first[0], first[1], first[2], first[3]);
+            if(empty){
+              emptyTiles++;
+              pushRun(emptyRow, empRef, 'empty', colorKey, x, y, w, h);
+              accRef.current = singleRef.current = riskyRef.current = unsafeRef.current = null;
+            } else if(first[3] === 255){
+              const borderStats = sampleOutsideBorderStats(data, rasterW, rasterH, px0, py0, px1, py1, first, 2);
+              borderPixelsChecked += borderStats.checked;
+              borderPixelsMatched += borderStats.matches;
+              borderPixelsOpaqueMismatch += borderStats.opaqueMismatches;
+              const safety = classifyUniformOpaqueTileSafety(parsed, x, y, w, h, colorKey, borderStats);
+              if(safety === 'accepted'){
+                solidTiles++;
+                pushRun(acceptedRow, accRef, 'accepted', colorKey, x, y, w, h);
+                singleRef.current = riskyRef.current = unsafeRef.current = empRef.current = null;
+              } else if(safety === 'single'){
+                singleShapeTiles++;
+                pushRun(singleRow, singleRef, 'single', colorKey, x, y, w, h);
+                accRef.current = riskyRef.current = unsafeRef.current = empRef.current = null;
+              } else if(safety === 'risky'){
+                riskyTiles++;
+                pushRun(riskyRow, riskyRef, 'risky', colorKey, x, y, w, h);
+                accRef.current = singleRef.current = unsafeRef.current = empRef.current = null;
+              } else {
+                unsafeTiles++;
+                pushRun(unsafeRow, unsafeRef, 'unsafe', colorKey, x, y, w, h);
+                accRef.current = singleRef.current = riskyRef.current = empRef.current = null;
+              }
+            } else {
+              translucentUniformTiles++;
+              unsafeTiles++;
+              pushRun(unsafeRow, unsafeRef, 'translucent', colorKey, x, y, w, h);
+              accRef.current = singleRef.current = riskyRef.current = empRef.current = null;
+            }
+          } else {
+            unsafeTiles++;
+            pushRun(unsafeRow, unsafeRef, 'unsafe', null, x, y, w, h);
+            accRef.current = singleRef.current = riskyRef.current = empRef.current = null;
+          }
+        }
+
+        acceptedRuns.push(acceptedRow);
+        singleRuns.push(singleRow);
+        riskyRuns.push(riskyRow);
+        unsafeRuns.push(unsafeRow);
+        emptyRuns.push(emptyRow);
+      }
+
+      const acceptedRects = mergeTileRuns(acceptedRuns, vb).filter(r=>r.kind==='accepted');
+      const singleRects = mergeTileRuns(singleRuns, vb);
+      const riskyRects = mergeTileRuns(riskyRuns, vb);
+      const unsafeRects = mergeTileRuns(unsafeRuns, vb);
+      const emptyRects = mergeTileRuns(emptyRuns, vb);
+      const acceptance = opts.gridAcceptance || 'orange';
+      const rects = [
+        ...acceptedRects,
+        ...(gridAcceptanceAllows('single', acceptance) ? singleRects : []),
+        ...(gridAcceptanceAllows('risky', acceptance) ? riskyRects : [])
+      ];
+      const paletteCount = new Set(rects.map(r=>r.color).filter(Boolean)).size;
+      logDebug('grid:built',{
+        tileSize, solidTiles, singleShapeTiles, riskyTiles, unsafeTiles, emptyTiles, translucentUniformTiles,
+        borderPixelsChecked, borderPixelsMatched, borderPixelsOpaqueMismatch,
+        acceptance,
+        rects:rects.length, acceptedRects:acceptedRects.length, singleRects:singleRects.length, riskyRects:riskyRects.length, unsafeRects:unsafeRects.length, emptyRects:emptyRects.length,
+        paletteCount, rasterW, rasterH, normalizedSvgTextLength, rasterSpace:'viewBox-normalized', mode:'safety-levels'
+      });
+      return {
+        tileSize, solidTiles, singleShapeTiles, riskyTiles, unsafeTiles, emptyTiles, translucentUniformTiles,
+        borderPixelsChecked, borderPixelsMatched, borderPixelsOpaqueMismatch,
+        acceptance,
+        rects, acceptedRects, singleRects, riskyRects, unsafeRects, emptyRects, paletteCount
+      };
+    }
+
+    function downloadText(filename,text){
+      const blob = new Blob([text],{type:'text/plain;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    }
+    function zoomPreviewAt(factor){
+      if(!previewState.hasContent) return;
+      const rect = el.previewViewport.getBoundingClientRect();
+      const mx = rect.width * 0.5, my = rect.height * 0.5;
+      const prevScale = previewState.scale;
+      const nextScale = clamp(prevScale * factor, 0.1, 20);
+      const wx = (mx - previewState.tx) / prevScale;
+      const wy = (my - previewState.ty) / prevScale;
+      previewState.scale = nextScale;
+      previewState.tx = mx - wx * nextScale;
+      previewState.ty = my - wy * nextScale;
+      updatePreviewTransform();
+    }
+    function escapeForCommentLine(str){return String(str).replace(/\r?\n/g,' ').replace(/\*\//g,'* /').trim()}
+    function updatePreviewTransform(){
+      el.previewStage.style.transform = `translate(${fmt(previewState.tx)}px, ${fmt(previewState.ty)}px) scale(${fmt(previewState.scale)})`;
+      if(el.zoomLabel) el.zoomLabel.textContent = `${Math.round(previewState.scale*100)}%`;
+    }
+    function fitPreview(){
+      const vw = el.previewViewport.clientWidth || 1;
+      const vh = el.previewViewport.clientHeight || 1;
+      const cw = previewState.contentW || 1;
+      const ch = previewState.contentH || 1;
+      const scale = Math.min(vw / cw, vh / ch);
+      previewState.scale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+      previewState.tx = (vw - cw * previewState.scale) * 0.5;
+      previewState.ty = (vh - ch * previewState.scale) * 0.5;
+      updatePreviewTransform();
+    }
+    function resetPreviewZoom(){
+      previewState.scale = 1;
+      previewState.tx = 0;
+      previewState.ty = 0;
+      updatePreviewTransform();
+    }
+    function renderPreview(svgText){
+      el.previewStage.innerHTML='';
+      const wrap=document.createElement('div');
+      wrap.innerHTML=svgText;
+      const svg=wrap.querySelector('svg');
+      if(!svg){ previewState.hasContent=false; return; }
+      const rawWidth = svg.getAttribute('width');
+      const rawHeight = svg.getAttribute('height');
+      let w=0,h=0;
+      if(svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width>0 && svg.viewBox.baseVal.height>0){
+        w=svg.viewBox.baseVal.width; h=svg.viewBox.baseVal.height;
+      } else {
+        w=parseFloat(rawWidth)||320;
+        h=parseFloat(rawHeight)||220;
+      }
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.style.width=`${fmt(w)}px`;
+      svg.style.height=`${fmt(h)}px`;
+      svg.style.maxWidth='none';
+      svg.style.maxHeight='none';
+      svg.style.overflow='visible';
+
+      const container=document.createElement('div');
+      container.style.position='relative';
+      container.style.width=`${fmt(w)}px`;
+      container.style.height=`${fmt(h)}px`;
+      container.appendChild(svg);
+
+      let pipelineDebugMode = getPipelineDebugMode();
+      if(pipelineDebugMode !== 'normal'){
+        svg.style.opacity = '0.08';
+      }
+      const gridInfo = state.parsed && state.parsed.gridAccel ? state.parsed.gridAccel : null;
+      if(gridInfo){
+        const ns='http://www.w3.org/2000/svg';
+        const overlay=document.createElementNS(ns,'svg');
+        overlay.setAttribute('class','grid-overlay');
+        overlay.setAttribute('viewBox', `${fmt(state.parsed.viewBox.x)} ${fmt(state.parsed.viewBox.y)} ${fmt(state.parsed.viewBox.width)} ${fmt(state.parsed.viewBox.height)}`);
+        overlay.setAttribute('width', fmt(w));
+        overlay.setAttribute('height', fmt(h));
+        overlay.style.width=`${fmt(w)}px`;
+        overlay.style.height=`${fmt(h)}px`;
+
+        const addRects = (list, fill, stroke)=>{
+          for(const r of (list||[])){
+            const rect=document.createElementNS(ns,'rect');
+            rect.setAttribute('x', fmt(r.x));
+            rect.setAttribute('y', fmt(r.y));
+            rect.setAttribute('width', fmt(r.w));
+            rect.setAttribute('height', fmt(r.h));
+            rect.setAttribute('fill', fill);
+            rect.setAttribute('stroke', stroke);
+            rect.setAttribute('stroke-width', '0.5');
+            overlay.appendChild(rect);
+          }
+        };
+
+        addRects(gridInfo.emptyRects, 'rgb(80,160,255)', 'rgb(180,220,255)');
+        addRects(gridInfo.unsafeRects, 'rgb(255,64,64)', 'rgb(255,190,190)');
+        addRects(gridInfo.riskyRects, 'rgb(255,165,0)', 'rgb(255,220,140)');
+        addRects(gridInfo.singleRects, 'rgb(255,235,0)', 'rgb(255,248,170)');
+        addRects(gridInfo.acceptedRects || gridInfo.rects, 'rgb(0,255,120)', 'rgb(170,255,210)');
+        overlay.style.opacity = fmt(getGridOverlayOpacity01());
+        container.appendChild(overlay);
+      }
+      if(getShowClipMaskPreview() && state.parsed){
+        const ns='http://www.w3.org/2000/svg';
+        const overlay=document.createElementNS(ns,'svg');
+        overlay.setAttribute('class','grid-overlay clip-mask-overlay');
+        overlay.setAttribute('viewBox', `${fmt(state.parsed.viewBox.x)} ${fmt(state.parsed.viewBox.y)} ${fmt(state.parsed.viewBox.width)} ${fmt(state.parsed.viewBox.height)}`);
+        overlay.setAttribute('width', fmt(w));
+        overlay.setAttribute('height', fmt(h));
+        overlay.style.width=`${fmt(w)}px`;
+        overlay.style.height=`${fmt(h)}px`;
+        const tile = 4;
+        for(const sh of state.parsed.shapes||[]){
+          if(!sh.clipGroups || !sh.clipGroups.length) continue;
+          const b = sanitizeBounds(sh.bounds) || computeContourBounds(sh.fillContours||[]) || computeSegmentBounds(sh.fillSegments||[]) || computeSegmentBounds(sh.signSegments||[]);
+          if(!b) continue;
+          for(let y=b.y0; y<b.y1; y+=tile){
+            for(let x=b.x0; x<b.x1; x+=tile){
+              const m = evalShapeClipMaskApprox({x:x+tile*0.5,y:y+tile*0.5}, sh);
+              const rect=document.createElementNS(ns,'rect');
+              rect.setAttribute('x', fmt(x));
+              rect.setAttribute('y', fmt(y));
+              rect.setAttribute('width', fmt(tile));
+              rect.setAttribute('height', fmt(tile));
+              rect.setAttribute('fill', m > 0.5 ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)');
+              overlay.appendChild(rect);
+            }
+          }
+        }
+        container.appendChild(overlay);
+      }
+
+      if(getShowTopologyOverlay() && state.parsed){
+        const ns='http://www.w3.org/2000/svg';
+        const overlay=document.createElementNS(ns,'svg');
+        overlay.setAttribute('class','grid-overlay topology-overlay');
+        overlay.setAttribute('viewBox', `${fmt(state.parsed.viewBox.x)} ${fmt(state.parsed.viewBox.y)} ${fmt(state.parsed.viewBox.width)} ${fmt(state.parsed.viewBox.height)}`);
+        overlay.setAttribute('width', fmt(w));
+        overlay.setAttribute('height', fmt(h));
+        overlay.style.width=`${fmt(w)}px`;
+        overlay.style.height=`${fmt(h)}px`;
+        for(const sh of state.parsed.shapes||[]){
+          const topo=sh.topologyDebug;
+          if(!topo) continue;
+          for(const seg of topo.splitSegments||[]){
+            const line=document.createElementNS(ns,'line');
+            line.setAttribute('x1', fmt(seg.p0.x)); line.setAttribute('y1', fmt(seg.p0.y));
+            line.setAttribute('x2', fmt(seg.p1.x)); line.setAttribute('y2', fmt(seg.p1.y));
+            line.setAttribute('stroke', 'rgba(0,255,255,0.65)');
+            line.setAttribute('stroke-width', '0.8');
+            overlay.appendChild(line);
+          }
+          for(const p of topo.intersections||[]){
+            const c=document.createElementNS(ns,'circle');
+            c.setAttribute('cx', fmt(p.x)); c.setAttribute('cy', fmt(p.y));
+            c.setAttribute('r', '2.2');
+            c.setAttribute('fill', 'rgb(255,0,255)');
+            c.setAttribute('stroke', 'white');
+            c.setAttribute('stroke-width', '0.6');
+            overlay.appendChild(c);
+          }
+        }
+        container.appendChild(overlay);
+      }
+      if(getShowClipOverlay() && state.parsed){
+        const ns='http://www.w3.org/2000/svg';
+        const overlay=document.createElementNS(ns,'svg');
+        overlay.setAttribute('class','grid-overlay clip-overlay');
+        overlay.setAttribute('viewBox', `${fmt(state.parsed.viewBox.x)} ${fmt(state.parsed.viewBox.y)} ${fmt(state.parsed.viewBox.width)} ${fmt(state.parsed.viewBox.height)}`);
+        overlay.setAttribute('width', fmt(w));
+        overlay.setAttribute('height', fmt(h));
+        overlay.style.width=`${fmt(w)}px`;
+        overlay.style.height=`${fmt(h)}px`;
+        const drawContour = (contour, color, width) => {
+          for(let i=0;i<contour.length;i++){
+            const a=contour[i], b=contour[(i+1)%contour.length];
+            if(!a || !b) continue;
+            const line=document.createElementNS(ns,'line');
+            line.setAttribute('x1', fmt(a.x)); line.setAttribute('y1', fmt(a.y));
+            line.setAttribute('x2', fmt(b.x)); line.setAttribute('y2', fmt(b.y));
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', String(width));
+            line.setAttribute('stroke-linecap', 'round');
+            overlay.appendChild(line);
+          }
+        };
+        const drawSegments = (segments, color, width) => {
+          for(const seg of (segments||[])){
+            const p0=seg.p0||seg.a, p1=seg.p1||seg.b;
+            if(!p0 || !p1) continue;
+            const line=document.createElementNS(ns,'line');
+            line.setAttribute('x1', fmt(p0.x)); line.setAttribute('y1', fmt(p0.y));
+            line.setAttribute('x2', fmt(p1.x)); line.setAttribute('y2', fmt(p1.y));
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', String(width));
+            line.setAttribute('stroke-linecap', 'round');
+            overlay.appendChild(line);
+          }
+        };
+        for(const sh of state.parsed.shapes||[]){
+          for(const group of (sh.clipGroups||[])){
+            for(const clipShape of (group||[])){
+              const pr = clipShape.primitive;
+              if(pr?.kind==='rect'){
+                const rect=document.createElementNS(ns,'rect');
+                rect.setAttribute('x', fmt(pr.x)); rect.setAttribute('y', fmt(pr.y));
+                rect.setAttribute('width', fmt(pr.w)); rect.setAttribute('height', fmt(pr.h));
+                if(pr.rx) rect.setAttribute('rx', fmt(pr.rx));
+                if(pr.ry) rect.setAttribute('ry', fmt(pr.ry));
+                rect.setAttribute('fill','none');
+                rect.setAttribute('stroke','rgba(255,64,64,0.95)');
+                rect.setAttribute('stroke-width','1.6');
+                overlay.appendChild(rect);
+              } else if(pr?.kind==='circle'){
+                const c=document.createElementNS(ns,'circle');
+                c.setAttribute('cx', fmt(pr.cx)); c.setAttribute('cy', fmt(pr.cy)); c.setAttribute('r', fmt(pr.r));
+                c.setAttribute('fill','none'); c.setAttribute('stroke','rgba(255,64,64,0.95)'); c.setAttribute('stroke-width','1.6');
+                overlay.appendChild(c);
+              } else if(pr?.kind==='ellipse'){
+                const e=document.createElementNS(ns,'ellipse');
+                e.setAttribute('cx', fmt(pr.cx)); e.setAttribute('cy', fmt(pr.cy)); e.setAttribute('rx', fmt(pr.rx)); e.setAttribute('ry', fmt(pr.ry));
+                e.setAttribute('fill','none'); e.setAttribute('stroke','rgba(255,64,64,0.95)'); e.setAttribute('stroke-width','1.6');
+                overlay.appendChild(e);
+              } else if(clipShape.fillContours && clipShape.fillContours.length){
+                for(const contour of clipShape.fillContours) drawContour(contour, 'rgba(255,64,64,0.95)', 1.6);
+              } else if(clipShape.fillSegments && clipShape.fillSegments.length){
+                drawSegments(clipShape.fillSegments, 'rgba(255,64,64,0.95)', 1.4);
+              } else if(clipShape.signSegments && clipShape.signSegments.length){
+                drawSegments(clipShape.signSegments, 'rgba(255,200,64,0.95)', 1.2);
+              }
+            }
+          }
+        }
+        container.appendChild(overlay);
+      }
+
+
+      pipelineDebugMode = getPipelineDebugMode();
+      if(pipelineDebugMode !== 'normal' && state.parsed){
+        const ns='http://www.w3.org/2000/svg';
+        const overlay=document.createElementNS(ns,'svg');
+        overlay.setAttribute('class','grid-overlay pipeline-debug-overlay');
+        overlay.setAttribute('viewBox', `${fmt(state.parsed.viewBox.x)} ${fmt(state.parsed.viewBox.y)} ${fmt(state.parsed.viewBox.width)} ${fmt(state.parsed.viewBox.height)}`);
+        overlay.setAttribute('width', fmt(w));
+        overlay.setAttribute('height', fmt(h));
+        overlay.style.width=`${fmt(w)}px`;
+        overlay.style.height=`${fmt(h)}px`;
+        const tile = 3;
+        for(const sh of state.parsed.shapes||[]){
+          if(!sh.clipGroups || !sh.clipGroups.length) continue;
+          const b = sanitizeBounds(sh.bounds) || computeContourBounds(sh.fillContours||[]) || computeSegmentBounds(sh.fillSegments||[]) || computeSegmentBounds(sh.signSegments||[]);
+          if(!b) continue;
+          for(let y=b.y0; y<b.y1; y+=tile){
+            for(let x=b.x0; x<b.x1; x+=tile){
+              const value = evalShapeClipMaskApprox({x:x+tile*0.5, y:y+tile*0.5}, sh, pipelineDebugMode);
+              const alpha = Math.max(0, Math.min(1, value));
+              const rect=document.createElementNS(ns,'rect');
+              rect.setAttribute('x', fmt(x));
+              rect.setAttribute('y', fmt(y));
+              rect.setAttribute('width', fmt(tile));
+              rect.setAttribute('height', fmt(tile));
+              const g = Math.round(alpha*255);
+              rect.setAttribute('fill', `rgb(${g},${g},${g})`);
+              overlay.appendChild(rect);
+            }
+          }
+        }
+        container.appendChild(overlay);
+      }
+
+      previewState.contentW=w; previewState.contentH=h; previewState.hasContent=true;
+      el.previewStage.appendChild(container);
+      const topoShapes=(state.parsed&&state.parsed.shapes)?state.parsed.shapes.filter(sh=>sh.topologyDebug&&((sh.topologyDebug.intersections&&sh.topologyDebug.intersections.length)||(sh.topologyDebug.splitSegments&&sh.topologyDebug.splitSegments.length))).length:0; const topoIntersections=(state.parsed&&state.parsed.shapes)?state.parsed.shapes.reduce((s,sh)=>s+((sh.topologyDebug&&sh.topologyDebug.intersections&&sh.topologyDebug.intersections.length)||0),0):0; logDebug('preview:rendered',{width:w,height:h,gridOverlay:!!gridInfo,gridOpacity:getGridOverlayOpacity01(),topologyOverlay:getShowTopologyOverlay(),clipOverlay:getShowClipOverlay(),topologyShapes:topoShapes,topologyIntersections:topoIntersections,gridSafe:gridInfo?((gridInfo.acceptedRects||gridInfo.rects)||[]).length:0,gridSingle:gridInfo?(gridInfo.singleRects||[]).length:0,gridRisky:gridInfo?(gridInfo.riskyRects||[]).length:0,gridUnsafe:gridInfo?(gridInfo.unsafeRects||[]).length:0,gridEmpty:gridInfo?(gridInfo.emptyRects||[]).length:0,pipelineDebugMode:getPipelineDebugMode()});
+      fitPreview();
+    }
+
+    function pointInContourPolygon(pt, contour){
+      let inside = false;
+      if(!contour || contour.length < 3) return false;
+      for(let i=0, j=contour.length - 1; i < contour.length; j = i++){
+        const a = contour[i], b = contour[j];
+        const cond = ((a.y > pt.y) !== (b.y > pt.y));
+        if(!cond) continue;
+        const x = (b.x - a.x) * (pt.y - a.y) / ((b.y - a.y) || 1e-9) + a.x;
+        if(x > pt.x) inside = !inside;
+      }
+      return inside;
+    }
+    function evalClipShapeInsideApprox(pt, clipShape){
+      const pr = clipShape.primitive;
+      if(pr?.kind === 'rect'){
+        return (pt.x >= pr.x && pt.x <= pr.x + pr.w && pt.y >= pr.y && pt.y <= pr.y + pr.h) ? 1 : 0;
+      }
+      if(pr?.kind === 'circle'){
+        const dx = pt.x - pr.cx, dy = pt.y - pr.cy;
+        return (dx*dx + dy*dy) <= pr.r*pr.r ? 1 : 0;
+      }
+      if(pr?.kind === 'ellipse'){
+        const dx = (pt.x - pr.cx)/(pr.rx || 1e-9), dy = (pt.y - pr.cy)/(pr.ry || 1e-9);
+        return (dx*dx + dy*dy) <= 1 ? 1 : 0;
+      }
+      if(clipShape.fillContours && clipShape.fillContours.length){
+        let inside = 0;
+        for(const contour of clipShape.fillContours){
+          if(pointInContourPolygon(pt, contour)) inside = inside ? 0 : 1;
+        }
+        return inside;
+      }
+      return 0;
+    }
+    function evalShapeClipMaskApprox(pt, shape){
+      if(!shape || !shape.clipGroups || !shape.clipGroups.length) return 1;
+      let mask = 1;
+      for(const group of shape.clipGroups){
+        let groupMask = 0;
+        for(const clipShape of (group || [])) groupMask = Math.max(groupMask, evalClipShapeInsideApprox(pt, clipShape));
+        mask *= groupMask;
+      }
+      return mask;
+    }
+
+
+    function pointInContourPolygon(pt, contour){
+      let inside = false;
+      if(!contour || contour.length < 3) return false;
+      for(let i=0, j=contour.length - 1; i < contour.length; j = i++){
+        const a = contour[i], b = contour[j];
+        const cond = ((a.y > pt.y) !== (b.y > pt.y));
+        if(!cond) continue;
+        const x = (b.x - a.x) * (pt.y - a.y) / ((b.y - a.y) || 1e-9) + a.x;
+        if(x > pt.x) inside = !inside;
+      }
+      return inside;
+    }
+    function pointSegmentDistance(px, py, ax, ay, bx, by){
+      const vx = bx - ax, vy = by - ay;
+      const wx = px - ax, wy = py - ay;
+      const vv = vx*vx + vy*vy;
+      const t = vv > 1e-9 ? Math.max(0, Math.min(1, (wx*vx + wy*vy)/vv)) : 0;
+      const dx = px - (ax + vx*t), dy = py - (ay + vy*t);
+      return Math.hypot(dx, dy);
+    }
+    function evalClipShapeInsideApprox(pt, clipShape){
+      const pr = clipShape.primitive;
+      if(pr?.kind === 'rect'){
+        return (pt.x >= pr.x && pt.x <= pr.x + pr.w && pt.y >= pr.y && pt.y <= pr.y + pr.h) ? 1 : 0;
+      }
+      if(pr?.kind === 'circle'){
+        const dx = pt.x - pr.cx, dy = pt.y - pr.cy;
+        return (dx*dx + dy*dy) <= pr.r*pr.r ? 1 : 0;
+      }
+      if(pr?.kind === 'ellipse'){
+        const dx = (pt.x - pr.cx)/(pr.rx || 1e-9), dy = (pt.y - pr.cy)/(pr.ry || 1e-9);
+        return (dx*dx + dy*dy) <= 1 ? 1 : 0;
+      }
+      if(clipShape.fillContours && clipShape.fillContours.length){
+        let inside = 0;
+        for(const contour of clipShape.fillContours){
+          if(pointInContourPolygon(pt, contour)) inside = inside ? 0 : 1;
+        }
+        return inside;
+      }
+      if(clipShape.fillSegments && clipShape.fillSegments.length){
+        let inside = 0;
+        const contour = [];
+        for(const seg of clipShape.fillSegments){
+          const p0 = seg.p0 || seg.a;
+          if(p0) contour.push(p0);
+        }
+        if(contour.length >= 3) inside = pointInContourPolygon(pt, contour) ? 1 : 0;
+        return inside;
+      }
+      return 0;
+    }
+    function evalClipShapeEdgeApprox(pt, clipShape){
+      const pr = clipShape.primitive;
+      let minD = Infinity;
+      if(pr?.kind === 'rect'){
+        const pts = [
+          [pr.x, pr.y, pr.x+pr.w, pr.y],
+          [pr.x+pr.w, pr.y, pr.x+pr.w, pr.y+pr.h],
+          [pr.x+pr.w, pr.y+pr.h, pr.x, pr.y+pr.h],
+          [pr.x, pr.y+pr.h, pr.x, pr.y],
+        ];
+        for(const s of pts) minD = Math.min(minD, pointSegmentDistance(pt.x, pt.y, s[0], s[1], s[2], s[3]))
+      }
+      if(clipShape.fillContours && clipShape.fillContours.length){
+        for(const contour of clipShape.fillContours){
+          for(let i=0;i<contour.length;i++){
+            const a = contour[i], b = contour[(i+1)%contour.length];
+            if(!a || !b) continue;
+            minD = Math.min(minD, pointSegmentDistance(pt.x, pt.y, a.x, a.y, b.x, b.y));
+          }
+        }
+      } else if(clipShape.fillSegments && clipShape.fillSegments.length){
+        for(const seg of clipShape.fillSegments){
+          const a = seg.p0 || seg.a, b = seg.p1 || seg.b;
+          if(!a || !b) continue;
+          minD = Math.min(minD, pointSegmentDistance(pt.x, pt.y, a.x, a.y, b.x, b.y));
+        }
+      }
+      if(!Number.isFinite(minD)) return 0;
+      const edge = Math.max(0, 1 - (minD / 1.5));
+      return edge;
+    }
+    function evalClipGroupApprox(pt, group, mode){
+      let groupMask = 0;
+      for(const clipShape of (group || [])){
+        let v = 0;
+        if(mode === 'clip_inside_only') v = evalClipShapeInsideApprox(pt, clipShape);
+        else if(mode === 'clip_edge_only') v = evalClipShapeEdgeApprox(pt, clipShape);
+        else if(mode === 'clip_mask_only') v = Math.max(evalClipShapeInsideApprox(pt, clipShape), evalClipShapeEdgeApprox(pt, clipShape));
+        groupMask = Math.max(groupMask, v);
+      }
+      return groupMask;
+    }
+    function evalShapeClipMaskApprox(pt, shape, mode){
+      if(!shape || !shape.clipGroups || !shape.clipGroups.length) return 1;
+      let mask = 1;
+      for(const group of shape.clipGroups){
+        mask *= evalClipGroupApprox(pt, group, mode);
+      }
+      return mask;
+    }
+
+    function renderSummary(parsed){ el.summaryRow.innerHTML=''; const quadStrokeCount=parsed.shapes.reduce((s,sh)=>s+sh.strokeSegments.filter(seg=>seg.type==='quad').length,0), lineStrokeCount=parsed.shapes.reduce((s,sh)=>s+sh.strokeSegments.filter(seg=>seg.type==='line').length,0), signCount=parsed.shapes.reduce((s,sh)=>s+((sh.signSegments&&sh.signSegments.length)||0),0), fillSegCount=parsed.shapes.reduce((s,sh)=>s+((sh.fillSegments&&sh.fillSegments.length)||0),0), avgFillTol=parsed.shapes.length?(parsed.shapes.reduce((s,sh)=>s+(sh.fillTolerance||0),0)/parsed.shapes.length):0; const gridInfo=parsed.gridAccel||null; const topoShapes=parsed.shapes.filter(sh=>sh.topologyDebug&&((sh.topologyDebug.intersections&&sh.topologyDebug.intersections.length)||(sh.topologyDebug.splitSegments&&sh.topologyDebug.splitSegments.length))); const topoIntersections=topoShapes.reduce((s,sh)=>s+((sh.topologyDebug&&sh.topologyDebug.intersections&&sh.topologyDebug.intersections.length)||0),0); const items=[`shapes: ${parsed.shapes.length}`,`gradients: ${parsed.gradients.size}`,`page fit: ${el.fitMode.value}`,`aa strength: ${Math.round(getAaStrength01()*100)}%`, `stroke quads: ${quadStrokeCount}`,`stroke lines: ${lineStrokeCount}`,`sign segs: ${signCount}`,`fill segs: ${fillSegCount}`,`avg fill tol: ${avgFillTol.toFixed(2)}`, `topology shapes: ${topoShapes.length}`, `topology xings: ${topoIntersections}`]; if(gridInfo) items.push(`grid mode: ${gridInfo.acceptance||'orange'}`, `grid safe: ${gridInfo.solidTiles||0}`, `grid single: ${gridInfo.singleShapeTiles||0}`, `grid risky: ${gridInfo.riskyTiles||0}`, `grid unsafe: ${gridInfo.unsafeTiles||0}`, `grid empty: ${gridInfo.emptyTiles||0}`, `border match: ${gridInfo.borderPixelsChecked?Math.round((gridInfo.borderPixelsMatched/gridInfo.borderPixelsChecked)*100):0}%`, `grid rects: ${gridInfo.rects.length}`, `grid palette: ${gridInfo.paletteCount}`); for(const t of items){const span=document.createElement('span'); span.className='pill'; span.textContent=t; el.summaryRow.appendChild(span)} }
+
+
+    function computeContourBounds(contours){
+      let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+      for(const contour of (contours||[])){
+        for(const p of (contour||[])){
+          if(!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+          x0=Math.min(x0,p.x); y0=Math.min(y0,p.y);
+          x1=Math.max(x1,p.x); y1=Math.max(y1,p.y);
+        }
+      }
+      return Number.isFinite(x0) ? {x0,y0,x1,y1} : null;
+    }
+
+    function computeSegmentBounds(segments){
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      const visit=p=>{ if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)) return; minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y); };
+      for(const seg of (segments||[])){ visit(seg.p0||seg.a); visit(seg.p1||seg.b); visit(seg.p2); }
+      if(!Number.isFinite(minX)) return null;
+      return {x0:minX,y0:minY,x1:maxX,y1:maxY};
+    }
+    function computeBounds(points){
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      for(const p of (points||[])){
+        if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)) continue;
+        minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y);
+      }
+      if(!Number.isFinite(minX)) return null;
+      return {x0:minX,y0:minY,x1:maxX,y1:maxY};
+    }
+
+    function assignFallbackBounds(shape){
+      if(!shape) return shape;
+      const contourBounds = computeContourBounds(shape.fillContours || []);
+      const fillBounds = computeSegmentBounds(shape.fillSegments || []);
+      const signBounds = computeSegmentBounds(shape.signSegments || []);
+      const topoBounds = shape.topologyDebug && shape.topologyDebug.inputBounds ? sanitizeBounds(shape.topologyDebug.inputBounds) : null;
+      const b = sanitizeBounds(shape.bounds) || contourBounds || fillBounds || signBounds || topoBounds || null;
+      if(b) shape.bounds = {x0:b.x0,y0:b.y0,x1:b.x1,y1:b.y1,cullMinX:b.x0,cullMinY:b.y0,cullMaxX:b.x1,cullMaxY:b.y1};
+      return shape;
+    }
+
+    function sanitizeBounds(b){
+      if(!b) return null;
+      if(![b.x0,b.y0,b.x1,b.y1].every(Number.isFinite)) return null;
+      return b;
+    }
+    function inferSegmentSubpaths(segments){
+      const out=[];
+      let current=null, prevEnd=null;
+      const flush=()=>{ if(current) out.push(current); current=null; prevEnd=null; };
+      for(const seg of (segments||[])){
+        const p0=seg.p0||seg.a||null, p1=seg.p1||seg.b||null;
+        const startsNew=!current || !p0 || !prevEnd || !ptsEqual(p0, prevEnd);
+        if(startsNew){ flush(); current={segments:[], first:p0||null, last:p1||null, typeCounts:{L:0,Q:0,A:0}, bounds:{x0:Infinity,y0:Infinity,x1:-Infinity,y1:-Infinity}}; }
+        current.segments.push(seg);
+        if(seg.type==='line') current.typeCounts.L++; else if(seg.type==='quad') current.typeCounts.Q++; else current.typeCounts.A++;
+        const visit=p=>{ if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)) return; current.bounds.x0=Math.min(current.bounds.x0,p.x); current.bounds.y0=Math.min(current.bounds.y0,p.y); current.bounds.x1=Math.max(current.bounds.x1,p.x); current.bounds.y1=Math.max(current.bounds.y1,p.y); };
+        visit(p0); visit(p1); visit(seg.p2);
+        current.last=p1||current.last;
+        prevEnd=p1||prevEnd;
+      }
+      flush();
+      return out.map((sp,idx)=>({
+        index:idx,
+        segmentCount:sp.segments.length,
+        closed:!!(sp.first&&sp.last&&ptsEqual(sp.first, sp.last)),
+        first:sp.first,last:sp.last,
+        typeCounts:sp.typeCounts,
+        bounds:Number.isFinite(sp.bounds.x0)?sp.bounds:null
+      }));
+    }
+    function computeSplitGraphStats(splitSegments){
+      const adj=new Map();
+      const add=(a,b)=>{ if(!a||!b) return; const ka=ptKey(a), kb=ptKey(b); if(!adj.has(ka)) adj.set(ka,new Set()); if(!adj.has(kb)) adj.set(kb,new Set()); adj.get(ka).add(kb); adj.get(kb).add(ka); };
+      for(const seg of (splitSegments||[])) add(seg.p0, seg.p1);
+      let deg1=0, deg2=0, deg3p=0, deg0=0;
+      for(const set of adj.values()){ const d=set.size; if(d===0) deg0++; else if(d===1) deg1++; else if(d===2) deg2++; else deg3p++; }
+      const seen=new Set(); let components=0, cycleComponents=0;
+      for(const key of adj.keys()){ if(seen.has(key)) continue; components++; const stack=[key]; let allDeg2=true; while(stack.length){ const k=stack.pop(); if(seen.has(k)) continue; seen.add(k); const set=adj.get(k)||new Set(); if(set.size!==2) allDeg2=false; for(const n of set) if(!seen.has(n)) stack.push(n); } if(allDeg2) cycleComponents++; }
+      return {nodes:adj.size,components,cycleComponents,deg0,deg1,deg2,deg3p};
+    }
+
+    function renderTopologyReport(parsed){
+      if(!el.topologyReport) return;
+      if(!parsed || !parsed.shapes){ el.topologyReport.textContent='Topology report unavailable.'; return; }
+      const lines=[];
+      lines.push(`topology overlay: ${getShowTopologyOverlay() ? 'on' : 'off'}`);
+      lines.push(`clip overlay: ${getShowClipOverlay() ? 'on' : 'off'}`);
+      lines.push(`pipeline debug mode: ${getPipelineDebugMode()}`);
+      lines.push(`clip mask preview: ${getShowClipMaskPreview() ? 'on' : 'off'}`);
+      lines.push(`topology shapes=${parsed.shapes.filter(sh=>sh.topologyDebug).length} totalShapes=${parsed.shapes.length}`);
+      lines.push('');
+      parsed.shapes.forEach((sh,idx)=>{
+        const topo=sh.topologyDebug||{};
+        const fillTypeCounts={L:0,Q:0,A:0}, signTypeCounts={L:0,Q:0,A:0};
+        for(const seg of (sh.fillSegments||[])){ if(seg.type==='line') fillTypeCounts.L++; else if(seg.type==='quad') fillTypeCounts.Q++; else fillTypeCounts.A++; }
+        for(const seg of (sh.signSegments||[])){ if(seg.type==='line') signTypeCounts.L++; else if(seg.type==='quad') signTypeCounts.Q++; else signTypeCounts.A++; }
+        const fillContoursCount=(sh.fillContours&&sh.fillContours.length)||0;
+        const flattenedContoursCount=(topo.inputContours&&topo.inputContours.length)||0;
+        const basisEdgeCount=(topo.edges&&topo.edges.length)||0;
+        const splitEdgeCount=(topo.splitSegments&&topo.splitSegments.length)||0;
+        const intersectionCount=(topo.intersections&&topo.intersections.length)||0;
+        const pathDbg=sh.pathDebug||null;
+        const splitHasNaN=!!((topo.splitSegments||[]).some(seg=>!Number.isFinite(seg.p0.x)||!Number.isFinite(seg.p0.y)||!Number.isFinite(seg.p1.x)||!Number.isFinite(seg.p1.y)));
+        const xingsHaveNaN=!!((topo.intersections||[]).some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)));
+        const inferredSignSubpaths=inferSegmentSubpaths(sh.signSegments||[]);
+        const inferredFillSubpaths=inferSegmentSubpaths(sh.fillSegments||[]);
+        const signBounds=computeSegmentBounds(sh.signSegments||[]);
+        const fillBounds=computeSegmentBounds(sh.fillSegments||[]);
+        const splitGraphStats=computeSplitGraphStats(topo.splitSegments||[]);
+        const topoInputBounds=(topo.inputBounds && Number.isFinite(topo.inputBounds.x0))?topo.inputBounds:null;
+        const edgePreview=(topo.edges||[]).slice(0,4).map(e=>`c${e.contour}:#${e.index} (${fmt(e.p0.x)},${fmt(e.p0.y)})->(${fmt(e.p1.x)},${fmt(e.p1.y)})`).join(' ');
+        const splitPreview=(topo.splitSegments||[]).slice(0,4).map((e,i)=>`#${i} (${fmt(e.p0.x)},${fmt(e.p0.y)})->(${fmt(e.p1.x)},${fmt(e.p1.y)})`).join(' ');
+        const fillSegPreview=(sh.fillSegments||[]).slice(0,4).map((seg,i)=>{ const p0=seg.p0||seg.a||{x:NaN,y:NaN}; const p1=seg.p1||seg.b||{x:NaN,y:NaN}; return `#${i}:${seg.type[0].toUpperCase()} (${fmt(p0.x)},${fmt(p0.y)})->(${fmt(p1.x)},${fmt(p1.y)})`; }).join(' ');
+        const signSegPreview=(sh.signSegments||[]).slice(0,4).map((seg,i)=>{ const p0=seg.p0||seg.a||{x:NaN,y:NaN}; const p1=seg.p1||seg.b||{x:NaN,y:NaN}; return `#${i}:${seg.type[0].toUpperCase()} (${fmt(p0.x)},${fmt(p0.y)})->(${fmt(p1.x)},${fmt(p1.y)})`; }).join(' ');
+        let zeroSegs=0, duplicatePts=0, signBreaks=0, fillBreaks=0;
+        const seenPts=new Set();
+        const allSegs=[...(sh.signSegments||[]), ...(sh.strokeSegments||[])];
+        for(let i=0;i<(sh.signSegments||[]).length;i++){ const seg=sh.signSegments[i]; if(i>0){ const prev=(sh.signSegments||[])[i-1]; const prevEnd=prev.p1||prev.b||null, currStart=seg.p0||seg.a||null; if(prevEnd&&currStart&&!ptsEqual(prevEnd,currStart)) signBreaks++; } }
+        for(let i=0;i<(sh.fillSegments||[]).length;i++){ const seg=(sh.fillSegments||[])[i]; if(i>0){ const prev=(sh.fillSegments||[])[i-1]; const prevEnd=prev.p1||prev.b||null, currStart=seg.p0||seg.a||null; if(prevEnd&&currStart&&!ptsEqual(prevEnd,currStart)) fillBreaks++; } }
+        for(const seg of allSegs){
+          const p0=seg.p0||seg.a||null, p1=seg.p1||seg.b||null;
+          if(p0&&p1&&ptsEqual(p0,p1)) zeroSegs++;
+          if(p0){ const k=ptKey(p0); if(seenPts.has(k)) duplicatePts++; else seenPts.add(k); }
+          if(p1){ const k=ptKey(p1); if(seenPts.has(k)) duplicatePts++; else seenPts.add(k); }
+        }
+        const implicitCloses=(topo.implicitCloses&&topo.implicitCloses.length)||0;
+        const shapeBounds=sanitizeBounds(sh.bounds)||fillBounds||signBounds||topoInputBounds||null; const boundsText=shapeBounds ? `[${fmt(shapeBounds.x0)},${fmt(shapeBounds.y0)} → ${fmt(shapeBounds.x1)},${fmt(shapeBounds.y1)}]` : 'null';
+        lines.push(`shape ${idx} <${sh.tag||'shape'}> rule=${sh.fillRule||'nonzero'}`);
+        const clipShapeCount=((sh.clipGroups||[]).reduce((a,g)=>a+(g?g.length:0),0));
+        if(clipShapeCount) lines.push(`  clipGroups=${(sh.clipGroups||[]).length} clipShapes=${clipShapeCount}`);
+        (sh.clipGroups||[]).forEach((group,gi)=>{ (group||[]).forEach((clipShape,ci)=>{ const cpr=clipShape.primitive; const cb=sanitizeBounds(clipShape.bounds)||computeContourBounds(clipShape.fillContours||[])||computeSegmentBounds(clipShape.fillSegments||[])||computeSegmentBounds(clipShape.signSegments||[]); lines.push(`  clip[${gi}:${ci}] <${clipShape.tag||'shape'}> kind=${cpr?.kind||'pathish'} rule=${clipShape.fillRule||'nonzero'} fillContours=${(clipShape.fillContours||[]).length} fillSegs=${(clipShape.fillSegments||[]).length} signSegs=${(clipShape.signSegments||[]).length} bounds=${cb?`[${fmt(cb.x0)},${fmt(cb.y0)} → ${fmt(cb.x1)},${fmt(cb.y1)}]`:'null'}`); }); });
+        if(pathDbg){ lines.push(`  pathSubpaths original=${pathDbg.originalSubpaths} parsed=${pathDbg.parsedSubpaths} closed=${pathDbg.closedSubpaths} open=${pathDbg.openSubpaths} closeCmds=${pathDbg.closeCommands} gapStarts=${pathDbg.implicitGapStarts}`); lines.push(`  pathSegs original=${pathDbg.originalSegmentCount} rawSign=${pathDbg.rawSignSegmentCount} rawFill=${pathDbg.rawFillSegmentCount}`); lines.push(`  topoInput source=${pathDbg.topologyInputSource||'unknown'} topoContours=${pathDbg.flatSignContoursCount||0} preview=${(pathDbg.flatSignContourPreview||[]).join(',')||'none'}`); if(pathDbg.legacySignContourCount!=null) lines.push(`  legacySignContours=${pathDbg.legacySignContourCount||0} preview=${(pathDbg.legacySignContourPreview||[]).join(',')||'none'}`); }
+        lines.push(`  fillContours=${fillContoursCount} flattenedContours=${flattenedContoursCount}`);
+        lines.push(`  fillSegs=${(sh.fillSegments||[]).length} [L${fillTypeCounts.L} Q${fillTypeCounts.Q} A${fillTypeCounts.A}] signSegs=${(sh.signSegments||[]).length} [L${signTypeCounts.L} Q${signTypeCounts.Q} A${signTypeCounts.A}] strokeSegs=${(sh.strokeSegments||[]).length}`);
+        lines.push(`  inferredSubpaths sign=${inferredSignSubpaths.length} fill=${inferredFillSubpaths.length} signBreaks=${signBreaks} fillBreaks=${fillBreaks}`);
+        lines.push(`  inferredClosed sign=${inferredSignSubpaths.filter(sp=>sp.closed).length} fill=${inferredFillSubpaths.filter(sp=>sp.closed).length}`);
+        lines.push(`  basisEdges=${basisEdgeCount} splitEdges=${splitEdgeCount} intersections=${intersectionCount}`);
+        lines.push(`  splitGraph nodes=${splitGraphStats.nodes} comps=${splitGraphStats.components} cycles=${splitGraphStats.cycleComponents} deg1=${splitGraphStats.deg1} deg2=${splitGraphStats.deg2} deg3+=${splitGraphStats.deg3p}`);
+        lines.push(`  zeroSegs=${zeroSegs} duplicatePts=${duplicatePts} implicitCloses=${implicitCloses}`);
+        lines.push(`  topoNaN split=${splitHasNaN?1:0} xings=${xingsHaveNaN?1:0} overlayDrawable=${(splitEdgeCount||intersectionCount)?1:0}`);
+        lines.push(`  bounds shape=${boundsText} sign=${signBounds?`[${fmt(signBounds.x0)},${fmt(signBounds.y0)} → ${fmt(signBounds.x1)},${fmt(signBounds.y1)}]`:'null'} fill=${fillBounds?`[${fmt(fillBounds.x0)},${fmt(fillBounds.y0)} → ${fmt(fillBounds.x1)},${fmt(fillBounds.y1)}]`:'null'} topoInput=${topoInputBounds?`[${fmt(topoInputBounds.x0)},${fmt(topoInputBounds.y0)} → ${fmt(topoInputBounds.x1)},${fmt(topoInputBounds.y1)}]`:'null'}`);
+        if(inferredSignSubpaths.length){ const preview=inferredSignSubpaths.slice(0,4).map(sp=>`#${sp.index}:${sp.segmentCount}${sp.closed?'c':'o'}[L${sp.typeCounts.L} Q${sp.typeCounts.Q} A${sp.typeCounts.A}]`).join(' '); lines.push(`  signLoopPreview=${preview}${inferredSignSubpaths.length>4?' …':''}`); }
+        if(inferredFillSubpaths.length){ const preview=inferredFillSubpaths.slice(0,4).map(sp=>`#${sp.index}:${sp.segmentCount}${sp.closed?'c':'o'}[L${sp.typeCounts.L} Q${sp.typeCounts.Q} A${sp.typeCounts.A}]`).join(' '); lines.push(`  fillLoopPreview=${preview}${inferredFillSubpaths.length>4?' …':''}`); }
+        if(edgePreview) lines.push(`  basisEdgePreview=${edgePreview}${(topo.edges||[]).length>4?' …':''}`);
+        if(splitPreview) lines.push(`  splitPreview=${splitPreview}${(topo.splitSegments||[]).length>4?' …':''}`);
+        if(signSegPreview) lines.push(`  signSegPreview=${signSegPreview}${(sh.signSegments||[]).length>4?' …':''}`);
+        if(fillSegPreview) lines.push(`  fillSegPreview=${fillSegPreview}${(sh.fillSegments||[]).length>4?' …':''}`);
+        if(intersectionCount){
+          const preview=topo.intersections.slice(0,8).map(p=>`(${fmt(p.x)},${fmt(p.y)})`).join(' ');
+          lines.push(`  xingPreview=${preview}${intersectionCount>8?' …':''}`);
+        }
+        lines.push('');
+      });
+      el.topologyReport.textContent = lines.join('\n');
+    }
+    function getGridOverlayOpacity01(){
+      if(!el.gridOverlayOpacity) return 1;
+      const raw = parseFloat(el.gridOverlayOpacity.value);
+      const value = Number.isFinite(raw) ? raw : 100;
+      return clamp(value / 100, 0, 1);
+    }
+    function updateGridOverlayOpacityLabel(){
+      if(!el.gridOverlayOpacityLabel || !el.gridOverlayOpacity) return;
+      const raw = parseInt(el.gridOverlayOpacity.value, 10);
+      const value = Number.isFinite(raw) ? clamp(raw, 0, 100) : 100;
+      el.gridOverlayOpacityLabel.textContent = `${value}%`;
+    }
+    function getShowTopologyOverlay(){ return !!(el.showTopologyOverlay && el.showTopologyOverlay.checked); }
+    function getShowClipOverlay(){ return !!(el.showClipOverlay && el.showClipOverlay.checked); }
+    function getPipelineDebugMode(){ return (el.pipelineDebugMode && el.pipelineDebugMode.value) || 'normal'; }
+    function getShowClipMaskPreview(){ return !!(el.showClipMaskPreview && el.showClipMaskPreview.checked); }
+    function ptKey(p){ return `${Math.round(p.x*1000)/1000},${Math.round(p.y*1000)/1000}`; }
+    function lineLineIntersectionDetailed(a,b,c,d,eps=1e-7){
+      const r={x:b.x-a.x,y:b.y-a.y}, s={x:d.x-c.x,y:d.y-c.y};
+      const denom = r.x*s.y - r.y*s.x;
+      if(Math.abs(denom) < eps) return null;
+      const qp={x:c.x-a.x,y:c.y-a.y};
+      const t = (qp.x*s.y - qp.y*s.x)/denom;
+      const u = (qp.x*r.y - qp.y*r.x)/denom;
+      if(t < -eps || t > 1+eps || u < -eps || u > 1+eps) return null;
+      return {t,u,p:{x:a.x + r.x*t, y:a.y + r.y*t}};
+    }
+    function computeTopologySplitDebugFromContours(contours){
+      const result={intersections:[], splitSegments:[], inputContours:[], edges:[], inputBounds:null};
+      if(!contours || !contours.length) return result;
+      result.inputContours = contours.map(c => (c||[]).map(p => ({x:p.x,y:p.y})));
+      try { result.inputBounds = computeBounds(result.inputContours.flat()); } catch(_e) { result.inputBounds = null; }
+      const edges=[];
+      for(let ci=0; ci<contours.length; ci++){
+        const contour=contours[ci]||[];
+        const n=contour.length;
+        if(n<2) continue;
+        for(let i=0;i<n;i++){
+          const a=contour[i], b=contour[(i+1)%n];
+          if(!a || !b || ptsEqual(a,b)) continue;
+          edges.push({contour:ci,index:i,count:n,p0:a,p1:b,cuts:[0,1]});
+        }
+      }
+      const pointMap=new Map();
+      const isAdjacentSameContour=(e1,e2)=>{
+        if(e1.contour!==e2.contour) return false;
+        const n=e1.count;
+        const d=Math.abs(e1.index-e2.index);
+        return d===0 || d===1 || d===n-1;
+      };
+      const endpointish=(t)=>t<=1e-5 || t>=1-1e-5;
+      for(let i=0;i<edges.length;i++){
+        for(let j=i+1;j<edges.length;j++){
+          const e1=edges[i], e2=edges[j];
+          if(isAdjacentSameContour(e1,e2)) continue;
+          const hit=lineLineIntersectionDetailed(e1.p0,e1.p1,e2.p0,e2.p1);
+          if(!hit) continue;
+          if(endpointish(hit.t) && endpointish(hit.u)) continue;
+          if(!endpointish(hit.t)) e1.cuts.push(Math.max(0,Math.min(1,hit.t)));
+          if(!endpointish(hit.u)) e2.cuts.push(Math.max(0,Math.min(1,hit.u)));
+          const key=ptKey(hit.p);
+          if(!pointMap.has(key)) pointMap.set(key, hit.p);
+        }
+      }
+      result.edges = edges.map(e=>({contour:e.contour,index:e.index,count:e.count,p0:{x:e.p0.x,y:e.p0.y},p1:{x:e.p1.x,y:e.p1.y},cuts:e.cuts.slice()}));
+      result.intersections=[...pointMap.values()];
+      for(const e of edges){
+        const ts=Array.from(new Set(e.cuts.map(v=>Math.round(v*1e6)/1e6))).sort((a,b)=>a-b);
+        for(let k=0;k<ts.length-1;k++){
+          const t0=ts[k], t1=ts[k+1];
+          if(t1-t0<=1e-6) continue;
+          const p0={x:lerp(e.p0.x,e.p1.x,t0), y:lerp(e.p0.y,e.p1.y,t0)};
+          const p1={x:lerp(e.p0.x,e.p1.x,t1), y:lerp(e.p0.y,e.p1.y,t1)};
+          if(ptsEqual(p0,p1)) continue;
+          result.splitSegments.push({type:'line', p0, p1});
+        }
+      }
+      return result;
+    }
+    function getAaStrength01(){
+      if(!el.aaStrength) return 1;
+      const raw = parseFloat(el.aaStrength.value);
+      const value = Number.isFinite(raw) ? raw : 100;
+      return clamp(value / 100, 0, 1);
+    }
+    function updateAaStrengthLabel(){
+      if(!el.aaStrengthLabel || !el.aaStrength) return;
+      const raw = parseInt(el.aaStrength.value, 10);
+      const value = Number.isFinite(raw) ? clamp(raw, 0, 100) : 100;
+      el.aaStrengthLabel.textContent = `${value}%`;
+    }
+    function applyGridOverlayOpacity(){
+      updateGridOverlayOpacityLabel();
+      const overlay = el.previewStage.querySelector('.grid-overlay');
+      if(overlay) overlay.style.opacity = fmt(getGridOverlayOpacity01());
+    }
+    function parseNumber(v,fallback=0){const n=parseFloat(v); return Number.isFinite(n)?n:fallback}
+    function parseOffset(value){if(value==null||value==='') return 0; const s=String(value).trim(); if(s.endsWith('%')) return clamp(parseFloat(s)*0.01,0,1); return clamp(parseFloat(s),0,1)}
+    function parseOpacity(value,fallback=1){if(value==null||value==='') return fallback; const n=parseFloat(String(value).trim()); return Number.isFinite(n)?clamp(n,0,1):fallback}
+    function parseStyleString(style){const out={}; if(!style) return out; style.split(';').forEach(pair=>{const idx=pair.indexOf(':'); if(idx!==-1) out[pair.slice(0,idx).trim()]=pair.slice(idx+1).trim()}); return out}
+    function serializeStyleObject(styleObj){ return Object.entries(styleObj||{}).filter(([k,v])=>k&&v!=null&&String(v).trim()!=='').map(([k,v])=>`${k}:${String(v).trim()}`).join('; '); }
+    function colorStringToRgb(value){if(!value||value==='none') return null; const s=value.trim(); if(s.startsWith('url(')) return null; if(s.startsWith('#')){const hex=s.slice(1); if(hex.length===3) return {r:parseInt(hex[0]+hex[0],16),g:parseInt(hex[1]+hex[1],16),b:parseInt(hex[2]+hex[2],16),a:1}; if(hex.length===4) return {r:parseInt(hex[0]+hex[0],16),g:parseInt(hex[1]+hex[1],16),b:parseInt(hex[2]+hex[2],16),a:parseInt(hex[3]+hex[3],16)/255}; if(hex.length===6) return {r:parseInt(hex.slice(0,2),16),g:parseInt(hex.slice(2,4),16),b:parseInt(hex.slice(4,6),16),a:1}; if(hex.length===8) return {r:parseInt(hex.slice(0,2),16),g:parseInt(hex.slice(2,4),16),b:parseInt(hex.slice(4,6),16),a:parseInt(hex.slice(6,8),16)/255};} const m=s.match(/^rgba?\(([^)]+)\)$/i); if(m){const raw=m[1].split(',').map(x=>x.trim()); if(raw.length>=3){const p=raw.map((x,i)=> i<3 ? parseFloat(x) : x.endsWith('%') ? parseFloat(x)*0.01 : parseFloat(x)); return {r:p[0],g:p[1],b:p[2],a:raw.length>=4?clamp(p[3],0,1):1};}} const named=document.createElement('div'); named.style.color=s; document.body.appendChild(named); const cs=getComputedStyle(named).color; named.remove(); const match=cs.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d\.]+))?\)$/i); return match?{r:Number(match[1]),g:Number(match[2]),b:Number(match[3]),a:match[4]!=null?clamp(Number(match[4]),0,1):1}:null}
+    function rgbToVec3(rgb){return `vec3(${(rgb.r/255).toFixed(6)}, ${(rgb.g/255).toFixed(6)}, ${(rgb.b/255).toFixed(6)})`}
+    function rgbaToVec4(rgba){const a=(rgba.a==null?1:rgba.a); return `vec4(${(rgba.r/255).toFixed(6)}, ${(rgba.g/255).toFixed(6)}, ${(rgba.b/255).toFixed(6)}, ${Number(a).toFixed(6)})`}
+    function matIdentity(){return {a:1,b:0,c:0,d:1,e:0,f:0}}
+    function matMul(m1,m2){return {a:m1.a*m2.a+m1.c*m2.b,b:m1.b*m2.a+m1.d*m2.b,c:m1.a*m2.c+m1.c*m2.d,d:m1.b*m2.c+m1.d*m2.d,e:m1.a*m2.e+m1.c*m2.f+m1.e,f:m1.b*m2.e+m1.d*m2.f+m1.f}}
+    function matInvert(m){const det=m.a*m.d-m.b*m.c; if(Math.abs(det)<1e-12) return matIdentity(); return {a:m.d/det,b:-m.b/det,c:-m.c/det,d:m.a/det,e:(m.c*m.f-m.d*m.e)/det,f:(m.b*m.e-m.a*m.f)/det}}
+    function parseTransformMatrix(str){if(!str||!str.trim()) return matIdentity(); const re=/([a-zA-Z]+)\s*\(([^)]*)\)/g; let m, out=matIdentity(); while((m=re.exec(str))){const fn=m[1].toLowerCase(); const nums=(m[2].match(/[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g)||[]).map(Number); let cur=matIdentity(); if(fn==='matrix'&&nums.length>=6){cur={a:nums[0],b:nums[1],c:nums[2],d:nums[3],e:nums[4],f:nums[5]};} else if(fn==='translate'){cur={a:1,b:0,c:0,d:1,e:nums[0]||0,f:nums.length>1?nums[1]:0};} else if(fn==='scale'){const sx=nums[0]==null?1:nums[0], sy=nums.length>1?nums[1]:sx; cur={a:sx,b:0,c:0,d:sy,e:0,f:0};} else if(fn==='rotate'){const ang=(nums[0]||0)*Math.PI/180, cs=Math.cos(ang), sn=Math.sin(ang); if(nums.length>2){const cx=nums[1], cy=nums[2]; cur=matMul(matMul({a:1,b:0,c:0,d:1,e:cx,f:cy},{a:cs,b:sn,c:-sn,d:cs,e:0,f:0}),{a:1,b:0,c:0,d:1,e:-cx,f:-cy});} else cur={a:cs,b:sn,c:-sn,d:cs,e:0,f:0};} else if(fn==='skewx'){const ang=(nums[0]||0)*Math.PI/180; cur={a:1,b:0,c:Math.tan(ang),d:1,e:0,f:0};} else if(fn==='skewy'){const ang=(nums[0]||0)*Math.PI/180; cur={a:1,b:Math.tan(ang),c:0,d:1,e:0,f:0};} out=matMul(out,cur);} return out}
+    
+    function matApply(m,p){ return {x:m.a*p.x + m.c*p.y + m.e, y:m.b*p.x + m.d*p.y + m.f}; }
+    function matIsIdentity(m){ return Math.abs(m.a-1)<1e-9 && Math.abs(m.b)<1e-9 && Math.abs(m.c)<1e-9 && Math.abs(m.d-1)<1e-9 && Math.abs(m.e)<1e-9 && Math.abs(m.f)<1e-9; }
+    function matIsAxisAlignedScaleTranslate(m){ return Math.abs(m.b) < 1e-9 && Math.abs(m.c) < 1e-9; }
+    function matIsOrthoUniform(m){ const sx=Math.hypot(m.a,m.b), sy=Math.hypot(m.c,m.d); return Math.abs(sx-sy) < 1e-6 && Math.abs(m.a*m.c + m.b*m.d) < 1e-6; }
+    function matScaleApprox(m){ return 0.5*(Math.hypot(m.a,m.b)+Math.hypot(m.c,m.d)); }
+    function transformPoints(points,m){ return points.map(p=>matApply(m,p)); }
+    function transformSegment(seg,m){
+      if(seg.type==='line') return [{type:'line',p0:matApply(m,seg.p0),p1:matApply(m,seg.p1),close:seg.close||false,implicit_fill_close:seg.implicit_fill_close||false}];
+      if(seg.type==='quad') return [{type:'quad',p0:matApply(m,seg.p0),p1:matApply(m,seg.p1),p2:matApply(m,seg.p2),close:seg.close||false,implicit_fill_close:seg.implicit_fill_close||false}];
+      if(seg.type==='cubic') return [{type:'cubic',p0:matApply(m,seg.p0),p1:matApply(m,seg.p1),p2:matApply(m,seg.p2),p3:matApply(m,seg.p3),close:seg.close||false,implicit_fill_close:seg.implicit_fill_close||false}];
+      if(seg.type==='arc'){
+        const qs=arcToQuadratics(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1,12);
+        return qs.map(q=>({type:'quad',p0:matApply(m,q.p0),p1:matApply(m,q.p1),p2:matApply(m,q.p2),close:seg.close||false,implicit_fill_close:seg.implicit_fill_close||false}));
+      }
+      if(seg.type==='arc_exact') return [{type:'quad',p0:matApply(m,seg.p0),p1:matApply(m,{x:(seg.p0.x+seg.p1.x)*0.5,y:(seg.p0.y+seg.p1.y)*0.5}),p2:matApply(m,seg.p1)}];
+      return [];
+    }
+    function transformSegments(segments,m){ if(matIsIdentity(m)) return segments.slice(); const out=[]; for(const seg of segments) out.push(...transformSegment(seg,m)); return out; }
+function parseGradientCoord(value,axis,units,viewBox,defaultValue){const raw=(value==null||value==='')?defaultValue:String(value).trim(); if(units==='userSpaceOnUse'){ if(raw.endsWith('%')) return (axis==='x'?viewBox.x:viewBox.y) + parseFloat(raw)*0.01*(axis==='x'?viewBox.width:viewBox.height); const n=parseFloat(raw); return Number.isFinite(n)?n:(parseFloat(defaultValue)||0); } if(raw.endsWith('%')) return parseFloat(raw)*0.01; const n=parseFloat(raw); return Number.isFinite(n)?n:(parseFloat(defaultValue)||0); }
+    function parseGradientStops(node){const stops=[...node.querySelectorAll(':scope > stop')].map(stop=>{const style=parseStyleString(stop.getAttribute('style')); const offset=parseOffset(stop.getAttribute('offset')??style.offset??'0'); const color=colorStringToRgb(stop.getAttribute('stop-color')??style['stop-color']??'#000')||{r:0,g:0,b:0,a:1}; const stopOpacity=parseOpacity(stop.getAttribute('stop-opacity')??style['stop-opacity'],1); color.a=clamp((color.a==null?1:color.a)*stopOpacity,0,1); return {offset,color};}).sort((a,b)=>a.offset-b.offset); if(!stops.length) return []; if(stops[0].offset>0) stops.unshift({offset:0,color:{...stops[0].color}}); if(stops[stops.length-1].offset<1) stops.push({offset:1,color:{...stops[stops.length-1].color}}); return stops}
+    function parseGradients(svg,viewBox){const raw=new Map(); const defs=svg.querySelector('defs'); if(!defs) return new Map(); for(const node of [...defs.querySelectorAll('linearGradient[id], radialGradient[id]')]){const tag=node.tagName?.toLowerCase(), id=node.getAttribute('id'); const href=node.getAttribute('href')||node.getAttribute('xlink:href'); raw.set(id,{id,kind:tag==='lineargradient'?'linear':'radial',href:href&&href.startsWith('#')?href.slice(1):null,units:node.getAttribute('gradientUnits')||null,transform:node.getAttribute('gradientTransform')||'',x1:node.getAttribute('x1'),y1:node.getAttribute('y1'),x2:node.getAttribute('x2'),y2:node.getAttribute('y2'),cx:node.getAttribute('cx'),cy:node.getAttribute('cy'),r:node.getAttribute('r'),fx:node.getAttribute('fx'),fy:node.getAttribute('fy'),stops:parseGradientStops(node)}); }
+      const resolved=new Map();
+      function resolve(id,stack=new Set()){ if(resolved.has(id)) return resolved.get(id); const g=raw.get(id); if(!g) return null; if(stack.has(id)) return null; stack.add(id); let base=null; if(g.href) base=resolve(g.href,stack); const units=g.units||base?.units||'objectBoundingBox'; const inheritedStops=(base?.stops&&base.stops.length)?base.stops:[]; const ownStops=(g.stops&&g.stops.length)?g.stops:[]; const resolvedStops=ownStops.length?ownStops:inheritedStops; const out={id,kind:g.kind||base?.kind||'linear',units,invTransform:matInvert(parseTransformMatrix(g.transform||'')),stops:resolvedStops.length?resolvedStops:[{offset:0,color:{r:0,g:0,b:0,a:1}},{offset:1,color:{r:255,g:255,b:255,a:1}}]}; if(out.kind==='linear'){ out.x1=parseGradientCoord(g.x1 ?? base?.x1,'x',units,viewBox,'0%'); out.y1=parseGradientCoord(g.y1 ?? base?.y1,'y',units,viewBox,'0%'); out.x2=parseGradientCoord(g.x2 ?? base?.x2,'x',units,viewBox,'100%'); out.y2=parseGradientCoord(g.y2 ?? base?.y2,'y',units,viewBox,'0%'); } else { out.cx=parseGradientCoord(g.cx ?? base?.cx,'x',units,viewBox,'50%'); out.cy=parseGradientCoord(g.cy ?? base?.cy,'y',units,viewBox,'50%'); out.r=parseGradientCoord(g.r ?? base?.r,'x',units,viewBox,'50%'); }
+        resolved.set(id,out); stack.delete(id); return out; }
+      for(const id of raw.keys()) resolve(id); return resolved; }
+    function paintFromString(value,gradients){if(!value||value==='none') return null; const s=String(value).trim(); const m=s.match(/^url\(#([^\)]+)\)$/); if(m){const g=gradients.get(m[1]); return g?{type:'gradient',gradientId:g.id}:null} const c=colorStringToRgb(s); return c?{type:'solid',color:c}:null}
+    function resolvePresentation(node,gradients,inheritedOpacity=1){const style=parseStyleString(node.getAttribute('style')); const fillValue=node.getAttribute('fill')??style.fill??'#000000'; const strokeValue=node.getAttribute('stroke')??style.stroke??'none'; const strokeWidth=parseNumber(node.getAttribute('stroke-width')??style['stroke-width']??1,1); const fillRule=node.getAttribute('fill-rule')??style['fill-rule']??'nonzero'; const localOpacity=parseOpacity(node.getAttribute('opacity')??style.opacity,1); const fillOpacity=parseOpacity(node.getAttribute('fill-opacity')??style['fill-opacity'],1); const strokeOpacity=parseOpacity(node.getAttribute('stroke-opacity')??style['stroke-opacity'],1); return {fill:paintFromString(fillValue,gradients),stroke:paintFromString(strokeValue,gradients),strokeWidth,fillRule:fillRule==='evenodd'?'evenodd':'nonzero',opacity:clamp(inheritedOpacity*localOpacity,0,1),fillOpacity,strokeOpacity}}
+    function tokenizePathData(d){const tokens=[]; const re=/([AaCcHhLlMmQqSsTtVvZz])|([-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?)/g; let m; while((m=re.exec(d))!==null) tokens.push(m[1]??m[2]); return tokens}
+    function svgArcToCenter(p0,rx,ry,xAxisRotation,largeArcFlag,sweepFlag,p1){rx=Math.abs(rx); ry=Math.abs(ry); const phi=xAxisRotation*Math.PI/180, cosPhi=Math.cos(phi), sinPhi=Math.sin(phi), dx2=(p0.x-p1.x)/2, dy2=(p0.y-p1.y)/2, x1p=cosPhi*dx2+sinPhi*dy2, y1p=-sinPhi*dx2+cosPhi*dy2; if(rx===0||ry===0) return null; let lambda=(x1p*x1p)/(rx*rx)+(y1p*y1p)/(ry*ry); if(lambda>1){const s=Math.sqrt(lambda); rx*=s; ry*=s} const rx2=rx*rx, ry2=ry*ry, x1p2=x1p*x1p, y1p2=y1p*y1p, sign=largeArcFlag===sweepFlag?-1:1, num=Math.max(0,rx2*ry2-rx2*y1p2-ry2*x1p2), den=rx2*y1p2+ry2*x1p2, coef=den===0?0:sign*Math.sqrt(num/den), cxp=coef*(rx*y1p)/ry, cyp=coef*(-ry*x1p)/rx, cx=cosPhi*cxp-sinPhi*cyp+(p0.x+p1.x)/2, cy=sinPhi*cxp+cosPhi*cyp+(p0.y+p1.y)/2; const angle=(u,v)=>Math.atan2(u.x*v.y-u.y*v.x,u.x*v.x+u.y*v.y), v1={x:(x1p-cxp)/rx,y:(y1p-cyp)/ry}, v2={x:(-x1p-cxp)/rx,y:(-y1p-cyp)/ry}; let theta1=angle({x:1,y:0},v1), deltaTheta=angle(v1,v2); if(!sweepFlag&&deltaTheta>0) deltaTheta-=Math.PI*2; if(sweepFlag&&deltaTheta<0) deltaTheta+=Math.PI*2; return {cx,cy,rx,ry,phi,theta1,deltaTheta}}
+    function arcPoint(arc,t){const theta=arc.theta1+arc.deltaTheta*t, cosPhi=Math.cos(arc.phi), sinPhi=Math.sin(arc.phi), ct=Math.cos(theta), st=Math.sin(theta); return {x:arc.cx+arc.rx*ct*cosPhi-arc.ry*st*sinPhi,y:arc.cy+arc.rx*ct*sinPhi+arc.ry*st*cosPhi}}
+    function arcToQuadratics(p0,rx,ry,rot,largeArc,sweep,p1,steps){const arc=svgArcToCenter(p0,rx,ry,rot,largeArc,sweep,p1); if(!arc) return [{p0,p1:vecLerp(p0,p1,.5),p2:p1}]; const quads=[]; for(let i=0;i<steps;i++){const t0=i/steps,t1=(i+1)/steps,tm=(t0+t1)*.5; quads.push({p0:arcPoint(arc,t0),p1:arcPoint(arc,tm),p2:arcPoint(arc,t1)})} return quads}
+    function pointLineDistance(p,a,b){const abx=b.x-a.x, aby=b.y-a.y, apx=p.x-a.x, apy=p.y-a.y; const denom=Math.max(abx*abx+aby*aby,1e-12); const t=clamp((apx*abx+apy*aby)/denom,0,1); const qx=a.x+abx*t, qy=a.y+aby*t; return Math.hypot(p.x-qx,p.y-qy)}
+    function curveTolerance(p0,p1,flatnessBase=BASE_STROKE_TOL){return Math.max(flatnessBase, Math.hypot(p1.x-p0.x,p1.y-p0.y)*0.02)}
+    function quadFlatEnough(p0,p1,p2,flatnessBase=BASE_STROKE_TOL){return pointLineDistance(p1,p0,p2)<=curveTolerance(p0,p2,flatnessBase)}
+    function cubicFlatEnough(p0,p1,p2,p3,flatnessBase=BASE_STROKE_TOL){const eps=curveTolerance(p0,p3,flatnessBase); return Math.max(pointLineDistance(p1,p0,p3),pointLineDistance(p2,p0,p3))<=eps}
+    function splitQuadratic(p0,p1,p2){const p01=vecLerp(p0,p1,.5), p12=vecLerp(p1,p2,.5), p012=vecLerp(p01,p12,.5); return [{p0,p1:p01,p2:p012},{p0:p012,p1:p12,p2}]}
+    function splitCubic(p0,p1,p2,p3){const p01=vecLerp(p0,p1,.5), p12=vecLerp(p1,p2,.5), p23=vecLerp(p2,p3,.5), p012=vecLerp(p01,p12,.5), p123=vecLerp(p12,p23,.5), p0123=vecLerp(p012,p123,.5); return [{p0,p1:p01,p2:p012,p3:p0123},{p0:p0123,p1:p123,p2:p23,p3}]}
+    function flattenQuadraticAdaptive(p0,p1,p2,out,depth=0,flatnessBase=BASE_STROKE_TOL){if(depth>11||quadFlatEnough(p0,p1,p2,flatnessBase)){out.push({x:p2.x,y:p2.y}); return} const [a,b]=splitQuadratic(p0,p1,p2); flattenQuadraticAdaptive(a.p0,a.p1,a.p2,out,depth+1,flatnessBase); flattenQuadraticAdaptive(b.p0,b.p1,b.p2,out,depth+1,flatnessBase)}
+    function flattenCubicAdaptive(p0,p1,p2,p3,out,depth=0,flatnessBase=BASE_STROKE_TOL){if(depth>11||cubicFlatEnough(p0,p1,p2,p3,flatnessBase)){out.push({x:p3.x,y:p3.y}); return} const [a,b]=splitCubic(p0,p1,p2,p3); flattenCubicAdaptive(a.p0,a.p1,a.p2,a.p3,out,depth+1,flatnessBase); flattenCubicAdaptive(b.p0,b.p1,b.p2,b.p3,out,depth+1,flatnessBase)}
+    function cubicLeafToQuadratic(p0,p1,p2,p3){const mid=cubicPoint(p0,p1,p2,p3,.5); const ctrl={x:2*mid.x-0.5*(p0.x+p3.x), y:2*mid.y-0.5*(p0.y+p3.y)}; return {p0,p1:ctrl,p2:p3}}
+    function cubicToQuadraticSegments(p0,p1,p2,p3,out,depth=0){if(depth>8||cubicFlatEnough(p0,p1,p2,p3,BASE_STROKE_TOL)){out.push({type:'quad',...cubicLeafToQuadratic(p0,p1,p2,p3)}); return} const [a,b]=splitCubic(p0,p1,p2,p3); cubicToQuadraticSegments(a.p0,a.p1,a.p2,a.p3,out,depth+1); cubicToQuadraticSegments(b.p0,b.p1,b.p2,b.p3,out,depth+1)}
+    function arcToExactStroke(seg){const arc=svgArcToCenter(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1); if(!arc) return null; if(Math.abs(arc.rx-arc.ry)>0.0001) return null; const radius=(arc.rx+arc.ry)*0.5; const halfAngle=Math.abs(arc.deltaTheta)*0.5; if(!(halfAngle>0.0 && halfAngle<3.13)) return null; const midAngle=arc.theta1+arc.deltaTheta*0.5; const rotToCanonical=Math.PI*0.5-midAngle; return {type:'arc_exact',cx:arc.cx,cy:arc.cy,ra:radius,rot:rotToCanonical,sc:{x:Math.sin(halfAngle),y:Math.cos(halfAngle)},p0:seg.p0,p1:seg.p1};}
+    function arcExactToQuadratics(seg, steps){ const start = Math.atan2(seg.sc.x, seg.sc.y); const half = Math.acos(Math.max(-1, Math.min(1, seg.sc.y))); const theta1 = start - half; const theta2 = start + half; const sweep = theta2 - theta1; const phi = seg.rot||0; const cosr=Math.cos(phi), sinr=Math.sin(phi); const out=[]; const n=Math.max(1, steps|0); let prev={x:seg.p0.x,y:seg.p0.y}; for(let i=0;i<n;i++){ const t0=i/n, t1=(i+1)/n, tm=(t0+t1)*0.5; const a0=theta1+sweep*t0, am=theta1+sweep*tm, a1=theta1+sweep*t1; const p0=i===0?seg.p0:{x:seg.cx + (Math.cos(a0)*cosr - Math.sin(a0)*sinr)*seg.ra, y:seg.cy + (Math.cos(a0)*sinr + Math.sin(a0)*cosr)*seg.ra}; const pm={x:seg.cx + (Math.cos(am)*cosr - Math.sin(am)*sinr)*seg.ra, y:seg.cy + (Math.cos(am)*sinr + Math.sin(am)*cosr)*seg.ra}; const p1=i===n-1?seg.p1:{x:seg.cx + (Math.cos(a1)*cosr - Math.sin(a1)*sinr)*seg.ra, y:seg.cy + (Math.cos(a1)*sinr + Math.sin(a1)*cosr)*seg.ra}; out.push({type:'quad', p0:p0, p1:pm, p2:p1, close: !!(seg.close && i===n-1)}); prev=p1; } return out; }
+    function flattenArcExactToPoints(seg,steps){
+      const pts=[]; const n=Math.max(2, steps|0); const a0=Math.atan2(seg.p0.y-seg.cy, seg.p0.x-seg.cx); let a1=Math.atan2(seg.p1.y-seg.cy, seg.p1.x-seg.cx);
+      let delta=a1-a0; while(delta<=-Math.PI) delta+=Math.PI*2; while(delta>Math.PI) delta-=Math.PI*2;
+      pts.push({x:seg.p0.x,y:seg.p0.y});
+      for(let i=1;i<n;i++){ const a=a0 + delta*(i/n); pts.push({x:seg.cx+Math.cos(a)*seg.ra, y:seg.cy+Math.sin(a)*seg.ra}); }
+      pts.push({x:seg.p1.x,y:seg.p1.y});
+      return pts;
+    }
+
+    function parsePath(d){const tokens=tokenizePathData(d); let i=0, cmd='', current={x:0,y:0}, subStart={x:0,y:0}, lastQuadControl=null, lastCubicControl=null; const segments=[]; const hasMore=()=>i<tokens.length, peek=()=>tokens[i], next=()=>tokens[i++], isCommand=tok=>/^[A-Za-z]$/.test(tok), readNum=()=>parseFloat(next()), readPoint=relative=>{const x=readNum(),y=readNum(); return relative?{x:current.x+x,y:current.y+y}:{x,y}}; while(hasMore()){if(isCommand(peek())) cmd=next(); const relative=cmd===cmd.toLowerCase(); switch(cmd.toLowerCase()){case 'm':{const p=readPoint(relative); current=p; subStart=p; lastQuadControl=null; lastCubicControl=null; cmd=relative?'l':'L'; while(hasMore()&&!isCommand(peek())){const p2=readPoint(cmd==='l'); segments.push({type:'line',p0:current,p1:p2}); current=p2} break} case 'l': while(hasMore()&&!isCommand(peek())){const p=readPoint(relative); segments.push({type:'line',p0:current,p1:p}); current=p} lastQuadControl=null; lastCubicControl=null; break; case 'h': while(hasMore()&&!isCommand(peek())){const x=readNum(); const p={x:relative?current.x+x:x,y:current.y}; segments.push({type:'line',p0:current,p1:p}); current=p} lastQuadControl=null; lastCubicControl=null; break; case 'v': while(hasMore()&&!isCommand(peek())){const y=readNum(); const p={x:current.x,y:relative?current.y+y:y}; segments.push({type:'line',p0:current,p1:p}); current=p} lastQuadControl=null; lastCubicControl=null; break; case 'q': while(hasMore()&&!isCommand(peek())){const c=readPoint(relative), p=readPoint(relative); segments.push({type:'quad',p0:current,p1:c,p2:p}); current=p; lastQuadControl=c; lastCubicControl=null} break; case 't': while(hasMore()&&!isCommand(peek())){const c=lastQuadControl?{x:current.x*2-lastQuadControl.x,y:current.y*2-lastQuadControl.y}:{...current}; const p=readPoint(relative); segments.push({type:'quad',p0:current,p1:c,p2:p}); current=p; lastQuadControl=c; lastCubicControl=null} break; case 'c': while(hasMore()&&!isCommand(peek())){const c1=readPoint(relative), c2=readPoint(relative), p=readPoint(relative); segments.push({type:'cubic',p0:current,p1:c1,p2:c2,p3:p}); current=p; lastCubicControl=c2; lastQuadControl=null} break; case 's': while(hasMore()&&!isCommand(peek())){const c1=lastCubicControl?{x:current.x*2-lastCubicControl.x,y:current.y*2-lastCubicControl.y}:{...current}; const c2=readPoint(relative), p=readPoint(relative); segments.push({type:'cubic',p0:current,p1:c1,p2:c2,p3:p}); current=p; lastCubicControl=c2; lastQuadControl=null} break; case 'a': while(hasMore()&&!isCommand(peek())){const rx=readNum(), ry=readNum(), rot=readNum(), largeArc=!!readNum(), sweep=!!readNum(), p=readPoint(relative); segments.push({type:'arc',p0:current,rx,ry,rot,largeArc,sweep,p1:p}); current=p; lastQuadControl=null; lastCubicControl=null} break; case 'z': segments.push({type:'line',p0:current,p1:subStart,close:true}); current={...subStart}; lastQuadControl=null; lastCubicControl=null; break; default: throw new Error(`Unsupported path command encountered: ${cmd}`)}} return segments}
+    function countPathSubpaths(d){ return ((d||'').match(/[Mm]/g)||[]).length }
+    function analyzePathSubpaths(segments){ const info={subpaths:0, closedSubpaths:0, openSubpaths:0, closeCommands:0, implicitGapStarts:0}; if(!segments||!segments.length) return info; let inSubpath=false; for(let i=0;i<segments.length;i++){ const seg=segments[i]; if(!inSubpath){ info.subpaths++; inSubpath=true; } const next=segments[i+1]||null; if(seg.close){ info.closeCommands++; info.closedSubpaths++; inSubpath=false; continue; } if(!next){ info.openSubpaths++; inSubpath=false; continue; } const end=segEnd(seg), nextStart=segStart(next); if(!ptsEqual(end,nextStart)){ info.implicitGapStarts++; info.openSubpaths++; inSubpath=false; } } return info; }
+    function computeFillTolerance(shape){const hasStroke=!!shape.stroke && shape.strokeWidth>0; if(!hasStroke) return 0.6; return clamp(shape.strokeWidth*0.35,0.75,4.0)}
+    function flattenSegmentsForFill(segments,shape){const contours=[]; let contour=[]; const fillTol=computeFillTolerance(shape); shape.fillTolerance=fillTol; const pushPoint=p=>{if(!contour.length) contour.push({x:p.x,y:p.y}); else {const last=contour[contour.length-1]; if(Math.abs(last.x-p.x)>1e-9||Math.abs(last.y-p.y)>1e-9) contour.push({x:p.x,y:p.y})}}; const closeIfNeeded=(seg)=>{ if(seg&&seg.close&&contour.length){ contours.push(contour); contour=[]; } }; for(const seg of segments){if(!contour.length) pushPoint(seg.p0); if(seg.type==='line'){pushPoint(seg.p1); closeIfNeeded(seg)} else if(seg.type==='quad'){flattenQuadraticAdaptive(seg.p0,seg.p1,seg.p2,contour,0,fillTol); closeIfNeeded(seg)} else if(seg.type==='cubic'){flattenCubicAdaptive(seg.p0,seg.p1,seg.p2,seg.p3,contour,0,fillTol); closeIfNeeded(seg)} else if(seg.type==='arc'){const qs=arcToQuadratics(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1,Math.max(6,Math.min(24,Math.ceil(8/fillTol)))); for(const q of qs) flattenQuadraticAdaptive(q.p0,q.p1,q.p2,contour,0,fillTol); closeIfNeeded(seg)} else if(seg.type==='arc_exact'){ const qs=arcExactToQuadratics(seg, Math.max(6,Math.min(24,Math.ceil(8/fillTol)))); for(const q of qs) flattenQuadraticAdaptive(q.p0,q.p1,q.p2,contour,0,fillTol); closeIfNeeded(seg)} } if(contour.length) contours.push(contour); return contours.filter(c=>c.length>=2)}
+
+    function flattenSegmentsToContoursByContinuity(segments,shape){
+      const contours=[]; let contour=[]; const fillTol=computeFillTolerance(shape); shape.fillTolerance=fillTol;
+      const pushPoint=p=>{ if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)) return; if(!contour.length) contour.push({x:p.x,y:p.y}); else { const last=contour[contour.length-1]; if(Math.abs(last.x-p.x)>1e-9||Math.abs(last.y-p.y)>1e-9) contour.push({x:p.x,y:p.y}); } };
+      const flush=()=>{ if(contour.length>=2) contours.push(contour); contour=[]; };
+      let prevEnd=null;
+      for(const seg of (segments||[])){
+        const p0=seg.p0||seg.a||null, p1=seg.p1||seg.b||null;
+        if(!contour.length || !p0 || !prevEnd || !ptsEqual(p0, prevEnd)) flush();
+        if(!contour.length && p0) pushPoint(p0);
+        if(seg.type==='line'){ pushPoint(p1); }
+        else if(seg.type==='quad'){ flattenQuadraticAdaptive(seg.p0,seg.p1,seg.p2,contour,0,fillTol); }
+        else if(seg.type==='cubic'){ flattenCubicAdaptive(seg.p0,seg.p1,seg.p2,seg.p3,contour,0,fillTol); }
+        else if(seg.type==='arc'){ const qs=arcToQuadratics(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1,Math.max(6,Math.min(24,Math.ceil(8/fillTol)))); for(const q of qs) flattenQuadraticAdaptive(q.p0,q.p1,q.p2,contour,0,fillTol); }
+        prevEnd=(seg.type==='quad'?seg.p2:(seg.p1||prevEnd));
+      }
+      flush();
+      return contours.filter(c=>c.length>=2);
+    }
+    function flattenSegmentsToContoursBySubpaths(segments,shape){
+      const contours=[]; let contour=[]; const fillTol=computeFillTolerance(shape); shape.fillTolerance=fillTol;
+      const pushPoint=p=>{ if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)) return; if(!contour.length) contour.push({x:p.x,y:p.y}); else { const last=contour[contour.length-1]; if(Math.abs(last.x-p.x)>1e-9||Math.abs(last.y-p.y)>1e-9) contour.push({x:p.x,y:p.y}); } };
+      const flush=()=>{ if(contour.length>=2) contours.push(contour); contour=[]; };
+      let prevEnd=null;
+      for(const seg of (segments||[])){
+        const start=segStart(seg), end=segEnd(seg);
+        if(!start||!end) continue;
+        if(!contour.length || !prevEnd || !ptsEqual(start, prevEnd)) flush();
+        if(!contour.length) pushPoint(start);
+        if(seg.type==='line') pushPoint(end);
+        else if(seg.type==='quad') flattenQuadraticAdaptive(seg.p0,seg.p1,seg.p2,contour,0,fillTol);
+        else if(seg.type==='cubic') flattenCubicAdaptive(seg.p0,seg.p1,seg.p2,seg.p3,contour,0,fillTol);
+        else if(seg.type==='arc' || seg.type==='arc_exact'){
+          if(seg.type==='arc'){
+            const qs=arcToQuadratics(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1,Math.max(6,Math.min(24,Math.ceil(8/fillTol))));
+            for(const q of qs) flattenQuadraticAdaptive(q.p0,q.p1,q.p2,contour,0,fillTol);
+          } else {
+            const samples=Math.max(12,Math.min(64,Math.ceil(Math.abs(Math.atan2(seg.sc.x, seg.sc.y))*24)));
+            for(let i=1;i<=samples;i++){
+              const t=i/samples;
+              const local={x:Math.sin((1-t)*Math.asin(seg.sc.x)+t*(Math.PI-Math.asin(seg.sc.x||0))), y:Math.cos((1-t)*Math.acos(seg.sc.y)+t*Math.acos(seg.sc.y))};
+            }
+            const pts=flattenArcExactToPoints(seg, Math.max(12, Math.min(48, Math.ceil(16/fillTol))));
+            for(const p of pts.slice(1)) pushPoint(p);
+          }
+        }
+        prevEnd=end;
+        if(seg.close){ flush(); prevEnd=null; }
+      }
+      flush();
+      return contours.filter(c=>c.length>=2);
+    }
+    function segStart(seg){return seg.p0}
+    function segEnd(seg){return seg.type==='quad'?seg.p2:seg.p1}
+    function ptsEqual(a,b){return Math.abs(a.x-b.x)<=1e-6&&Math.abs(a.y-b.y)<=1e-6}
+    function segIsDegenerate(seg){ if(!seg) return true; if(seg.type==='line') return ptsEqual(seg.p0, seg.p1); if(seg.type==='quad') return ptsEqual(seg.p0, seg.p1) && ptsEqual(seg.p1, seg.p2); if(seg.type==='arc_exact') return seg.ra<=1e-6 || ptsEqual(seg.p0, seg.p1); return false; }
+    function segEq(a,b){ if(!a||!b||a.type!==b.type) return false; if(a.type==='line') return ptsEqual(a.p0,b.p0)&&ptsEqual(a.p1,b.p1); if(a.type==='quad') return ptsEqual(a.p0,b.p0)&&ptsEqual(a.p1,b.p1)&&ptsEqual(a.p2,b.p2); if(a.type==='arc_exact') return Math.abs(a.cx-b.cx)<=1e-6&&Math.abs(a.cy-b.cy)<=1e-6&&Math.abs(a.ra-b.ra)<=1e-6&&Math.abs(a.rot-b.rot)<=1e-6&&Math.abs(a.sc.x-b.sc.x)<=1e-6&&Math.abs(a.sc.y-b.sc.y)<=1e-6&&ptsEqual(a.p0,b.p0)&&ptsEqual(a.p1,b.p1); return false; }
+    function sanitizeSegments(segs){ const out=[]; for(const seg of (segs||[])){ if(segIsDegenerate(seg)) continue; if(out.length && segEq(out[out.length-1], seg)) continue; out.push(seg); } return out; }
+    function closeSubpathsForFill(segs){if(!segs.length) return []; const out=[]; let subStart=segStart(segs[0]); let prevEnd=segEnd(segs[0]); out.push(segs[0]); for(let i=1;i<segs.length;i++){const seg=segs[i]; const s=segStart(seg); if(!ptsEqual(s, prevEnd)){ if(!ptsEqual(prevEnd, subStart)) out.push({type:'line',p0:{x:prevEnd.x,y:prevEnd.y},p1:{x:subStart.x,y:subStart.y},implicit_fill_close:true}); subStart=s; } out.push(seg); prevEnd=segEnd(seg); } if(!ptsEqual(prevEnd, subStart)) out.push({type:'line',p0:{x:prevEnd.x,y:prevEnd.y},p1:{x:subStart.x,y:subStart.y},implicit_fill_close:true}); return sanitizeSegments(out) }
+    function parsePoints(text){const nums=(text.match(/[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g)||[]).map(Number); const pts=[]; for(let i=0;i+1<nums.length;i+=2) pts.push({x:nums[i],y:nums[i+1]}); return pts}
+    function contourToLineSegments(points,closed){const segs=[]; for(let i=0;i<points.length-1;i++) segs.push({type:'line',p0:points[i],p1:points[i+1]}); if(closed&&points.length>1) segs.push({type:'line',p0:points[points.length-1],p1:points[0]}); return sanitizeSegments(segs)}
+    function ellipseContour(cx,cy,rx,ry,steps){const pts=[]; for(let i=0;i<steps;i++){const a=(i/steps)*Math.PI*2; pts.push({x:cx+Math.cos(a)*rx,y:cy+Math.sin(a)*ry})} return pts}
+    function roundedRectContour(x,y,w,h,rx,ry,cornerSteps){if(rx<=0&&ry<=0) return [[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}]]; const pts=[]; const corners=[{cx:x+w-rx,cy:y+ry,a0:-Math.PI/2,a1:0},{cx:x+w-rx,cy:y+h-ry,a0:0,a1:Math.PI/2},{cx:x+rx,cy:y+h-ry,a0:Math.PI/2,a1:Math.PI},{cx:x+rx,cy:y+ry,a0:Math.PI,a1:Math.PI*1.5}]; for(const c of corners) for(let i=0;i<=cornerSteps;i++){const t=i/cornerSteps,a=lerp(c.a0,c.a1,t); pts.push({x:c.cx+Math.cos(a)*rx,y:c.cy+Math.sin(a)*ry})} return [pts]}
+    function computeBoundingBox(shape){let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; const visit=p=>{minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y)}; for(const contour of shape.fillContours) for(const p of contour) visit(p); for(const seg of shape.fillSegments){if(seg.type==='arc_exact'){visit({x:seg.cx-seg.ra,y:seg.cy-seg.ra}); visit({x:seg.cx+seg.ra,y:seg.cy+seg.ra})} if(seg.p0) visit(seg.p0); if(seg.p1) visit(seg.p1); if(seg.p2) visit(seg.p2)} for(const seg of shape.strokeSegments){if(seg.type==='arc_exact'){visit({x:seg.cx-seg.ra,y:seg.cy-seg.ra}); visit({x:seg.cx+seg.ra,y:seg.cy+seg.ra})} if(seg.p0) visit(seg.p0); if(seg.p1) visit(seg.p1); if(seg.p2) visit(seg.p2)} if(!Number.isFinite(minX)){minX=0; minY=0; maxX=1; maxY=1} const pad=(shape.stroke&&shape.strokeWidth>0)?shape.strokeWidth*.5:0; return {minX,minY,maxX,maxY,width:Math.max(1e-6,maxX-minX),height:Math.max(1e-6,maxY-minY),cullMinX:minX-pad,cullMinY:minY-pad,cullMaxX:maxX+pad,cullMaxY:maxY+pad,cullWidth:Math.max(1e-6,maxX-minX+pad*2),cullHeight:Math.max(1e-6,maxY-minY+pad*2)}}
+    function primitiveToShape(node,gradients,viewBox,opts,inheritedOpacity=1,worldTransform=matIdentity()){
+      const style=resolvePresentation(node,gradients,inheritedOpacity), tag=node.tagName.toLowerCase();
+      const shape={tag,fill:style.fill,stroke:style.stroke,strokeWidth:style.strokeWidth*matScaleApprox(worldTransform),fillRule:style.fillRule,opacity:style.opacity,fillOpacity:style.fillOpacity,strokeOpacity:style.strokeOpacity,fillContours:[],signSegments:[],fillSegments:[],strokeSegments:[],clipGroups:[],bounds:null,primitive:null,fillTolerance:0,topologyDebug:null,topologySignSegments:null};
+      const closeContoursToSegments=(contours)=>sanitizeSegments(contours.flatMap(c=>contourToLineSegments(c,true)));
+      const useContourShape=(contours)=>{ shape.fillContours=contours; shape.signSegments=sanitizeSegments(closeSubpathsForFill(closeContoursToSegments(contours))); shape.fillSegments=sanitizeSegments(closeSubpathsForFill(closeContoursToSegments(contours))); shape.strokeSegments=sanitizeSegments(contours.flatMap(c=>contourToLineSegments(c,true))); shape.fillTolerance=computeFillTolerance(shape); };
+      if(tag==='rect'){
+        const x=parseNumber(node.getAttribute('x')), y=parseNumber(node.getAttribute('y')), w=parseNumber(node.getAttribute('width')), h=parseNumber(node.getAttribute('height')); if(w<=0||h<=0) return null;
+        const rx=clamp(parseNumber(node.getAttribute('rx'),0),0,w*.5), ry=clamp(parseNumber(node.getAttribute('ry'),rx),0,h*.5);
+        if(matIsIdentity(worldTransform) || matIsAxisAlignedScaleTranslate(worldTransform)){
+          const p0=matApply(worldTransform,{x,y}), p1=matApply(worldTransform,{x:x+w,y:y+h});
+          const sx=Math.abs(worldTransform.a)||1, sy=Math.abs(worldTransform.d)||1;
+          const nx=Math.min(p0.x,p1.x), ny=Math.min(p0.y,p1.y), nw=Math.abs(p1.x-p0.x), nh=Math.abs(p1.y-p0.y);
+          shape.primitive={kind:'rect',x:nx,y:ny,w:nw,h:nh,rx:rx*sx,ry:ry*sy}; shape.fillTolerance=computeFillTolerance(shape); shape.fillContours=roundedRectContour(nx,ny,nw,nh,rx*sx,ry*sy,opts.quadSteps); shape.strokeSegments=contourToLineSegments(shape.fillContours[0],true);
+        } else {
+          useContourShape([transformPoints(roundedRectContour(x,y,w,h,rx,ry,Math.max(12,opts.quadSteps)),worldTransform)]);
+        }
+      } else if(tag==='circle'){
+        const cx=parseNumber(node.getAttribute('cx')), cy=parseNumber(node.getAttribute('cy')), r=parseNumber(node.getAttribute('r')); if(r<=0) return null;
+        if(matIsIdentity(worldTransform) || matIsOrthoUniform(worldTransform)){
+          const c=matApply(worldTransform,{x:cx,y:cy}); const s=Math.hypot(worldTransform.a,worldTransform.b)||1; shape.primitive={kind:'circle',cx:c.x,cy:c.y,r:r*s}; shape.fillTolerance=computeFillTolerance(shape); shape.fillContours=[ellipseContour(c.x,c.y,r*s,r*s,Math.max(48,Math.ceil(64/Math.max(0.5,computeFillTolerance(shape)))) )]; shape.strokeSegments=contourToLineSegments(shape.fillContours[0],true);
+        } else if(matIsAxisAlignedScaleTranslate(worldTransform)){
+          const c=matApply(worldTransform,{x:cx,y:cy}); shape.primitive={kind:'ellipse',cx:c.x,cy:c.y,rx:r*Math.abs(worldTransform.a),ry:r*Math.abs(worldTransform.d)}; shape.fillTolerance=computeFillTolerance(shape); shape.fillContours=[ellipseContour(c.x,c.y,shape.primitive.rx,shape.primitive.ry,Math.max(48,Math.ceil(64/Math.max(0.5,computeFillTolerance(shape)))) )]; shape.strokeSegments=contourToLineSegments(shape.fillContours[0],true);
+        } else {
+          useContourShape([transformPoints(ellipseContour(cx,cy,r,r,64),worldTransform)]);
+        }
+      } else if(tag==='ellipse'){
+        const cx=parseNumber(node.getAttribute('cx')), cy=parseNumber(node.getAttribute('cy')), rx=parseNumber(node.getAttribute('rx')), ry=parseNumber(node.getAttribute('ry')); if(rx<=0||ry<=0) return null;
+        if(matIsIdentity(worldTransform) || matIsAxisAlignedScaleTranslate(worldTransform)){
+          const c=matApply(worldTransform,{x:cx,y:cy}); shape.primitive={kind:'ellipse',cx:c.x,cy:c.y,rx:rx*Math.abs(worldTransform.a||1),ry:ry*Math.abs(worldTransform.d||1)}; shape.fillTolerance=computeFillTolerance(shape); shape.fillContours=[ellipseContour(c.x,c.y,shape.primitive.rx,shape.primitive.ry,Math.max(48,Math.ceil(64/Math.max(0.5,computeFillTolerance(shape)))) )]; shape.strokeSegments=contourToLineSegments(shape.fillContours[0],true);
+        } else {
+          useContourShape([transformPoints(ellipseContour(cx,cy,rx,ry,64),worldTransform)]);
+        }
+      } else if(tag==='line'){
+        const x1=parseNumber(node.getAttribute('x1')), y1=parseNumber(node.getAttribute('y1')), x2=parseNumber(node.getAttribute('x2')), y2=parseNumber(node.getAttribute('y2')); shape.fill=null; const p0=matApply(worldTransform,{x:x1,y:y1}), p1=matApply(worldTransform,{x:x2,y:y2}); shape.strokeSegments=sanitizeSegments([{type:'line',p0,p1}]); shape.fillTolerance=computeFillTolerance(shape)
+      } else if(tag==='polyline'||tag==='polygon'){
+        let pts=parsePoints(node.getAttribute('points')||''); if(pts.length<2) return null; pts=transformPoints(pts,worldTransform); shape.fillTolerance=computeFillTolerance(shape); shape.fillContours=tag==='polygon'?[pts]:[]; shape.signSegments=tag==='polygon'?sanitizeSegments(contourToLineSegments(pts,true)):[]; shape.fillSegments=tag==='polygon'?sanitizeSegments(contourToLineSegments(pts,true)):[]; shape.strokeSegments=sanitizeSegments(contourToLineSegments(pts,tag==='polygon')); if(tag==='polyline') shape.fill=null
+      } else if(tag==='path'){
+        const d=node.getAttribute('d')||''; let segments=parsePath(d); if(!segments.length) return null; const rawPathAnalysis=analyzePathSubpaths(segments); const originalSubpathCount=countPathSubpaths(d); segments=transformSegments(segments,worldTransform); const strokeSegs=[]; for(const seg of segments){ if(seg.type==='line'||seg.type==='quad') strokeSegs.push(seg); else if(seg.type==='cubic'){ if(opts.cubicMode==='quadratic'){ cubicToQuadraticSegments(seg.p0,seg.p1,seg.p2,seg.p3,strokeSegs); } else { const pts=[seg.p0]; flattenCubicAdaptive(seg.p0,seg.p1,seg.p2,seg.p3,pts,0,BASE_STROKE_TOL); strokeSegs.push(...contourToLineSegments(pts,false)); } } else if(seg.type==='arc'){ const exactArc=arcToExactStroke(seg); if(exactArc) strokeSegs.push(exactArc); else { const qs=arcToQuadratics(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1,Math.max(2,Math.min(opts.arcSteps,8))); strokeSegs.push(...qs.map(q=>({type:'quad',...q}))); } } }
+        shape.strokeSegments=sanitizeSegments(strokeSegs); const signSegs=[], fillSegs=[]; for(const seg of segments){ if(seg.type==='line'||seg.type==='quad'){ signSegs.push(seg); fillSegs.push(seg); } else if(seg.type==='cubic'){ cubicToQuadraticSegments(seg.p0,seg.p1,seg.p2,seg.p3,signSegs); cubicToQuadraticSegments(seg.p0,seg.p1,seg.p2,seg.p3,fillSegs); } else if(seg.type==='arc'){ const signQs=arcToQuadratics(seg.p0,seg.rx,seg.ry,seg.rot,seg.largeArc,seg.sweep,seg.p1,Math.max(4,Math.min(opts.arcSteps,16))); signSegs.push(...signQs.map(q=>({type:'quad',...q}))); const exactFillArc=arcToExactStroke(seg); if(exactFillArc) fillSegs.push(exactFillArc); else fillSegs.push(...signQs.map(q=>({type:'quad',...q}))); } }
+        const rawSignSegments=sanitizeSegments(closeSubpathsForFill(signSegs));
+        shape.signSegments=rawSignSegments.slice();
+        shape.fillSegments=sanitizeSegments(closeSubpathsForFill(fillSegs));
+        const topoFillContours=flattenSegmentsToContoursBySubpaths(fillSegs, shape);
+        const flatSignContours=flattenSegmentsForFill(rawSignSegments, shape);
+        const topologyDebug = computeTopologySplitDebugFromContours(topoFillContours);
+        shape.topologyDebug = topologyDebug;
+        shape.topologySignSegments = topologyDebug && topologyDebug.splitSegments && topologyDebug.splitSegments.length ? sanitizeSegments(topologyDebug.splitSegments) : null;
+        shape.fillContours = topoFillContours && topoFillContours.length ? topoFillContours.map(c=>c.map(p=>({x:p.x,y:p.y}))) : [];
+        shape.fillTolerance=computeFillTolerance(shape); shape.pathDebug={originalSubpaths:originalSubpathCount, parsedSubpaths:rawPathAnalysis.subpaths, closedSubpaths:rawPathAnalysis.closedSubpaths, openSubpaths:rawPathAnalysis.openSubpaths, closeCommands:rawPathAnalysis.closeCommands, implicitGapStarts:rawPathAnalysis.implicitGapStarts, originalSegmentCount:segments.length, rawSignSegmentCount:rawSignSegments.length, rawFillSegmentCount:shape.fillSegments.length, topologyInputSource:'fillContoursBySubpaths(rawFillSegments)', flatSignContoursCount:topoFillContours.length, flatSignContourPreview:topoFillContours.slice(0,4).map(c=>c.length), topologyInputBounds:(topologyDebug&&topologyDebug.inputBounds)?topologyDebug.inputBounds:null, legacySignContourCount:flatSignContours.length, legacySignContourPreview:flatSignContours.slice(0,4).map(c=>c.length)}
+      } else return null;
+      const hasFill=!!shape.fill, hasStroke=!!shape.stroke&&shape.strokeWidth>0; if(!hasFill&&!hasStroke) return null; if(!hasFill){ shape.fillContours=[]; shape.signSegments=[]; shape.fillSegments=[]; } if(!hasStroke) shape.strokeSegments=[]; if(!shape.fillContours.length&&!shape.signSegments.length&&!shape.fillSegments.length&&!shape.strokeSegments.length) return null; shape.bounds=computeBoundingBox(shape); return shape
+    }
+function parseClipPaths(svg){const clipPaths=new Map(); for(const cp of [...svg.querySelectorAll('clipPath[id]')]) clipPaths.set(cp.getAttribute('id'), cp); return clipPaths}
+    function parseSvg(svgText,opts){logDebug('parseSvg:begin',{length:svgText.length}); const parser=new DOMParser(), doc=parser.parseFromString(svgText,'image/svg+xml'), svg=doc.documentElement; if(!svg||svg.tagName.toLowerCase()!=='svg') throw new Error('Input is not a valid SVG root.'); const parserError=doc.querySelector('parsererror'); if(parserError) throw new Error('SVG parser error: '+parserError.textContent.trim()); let vb=svg.getAttribute('viewBox'), viewBox; if(vb){const nums=vb.trim().split(/[\s,]+/).map(Number); if(nums.length!==4||nums.some(n=>!Number.isFinite(n))) throw new Error('Invalid viewBox.'); viewBox={x:nums[0],y:nums[1],width:nums[2],height:nums[3]}} else {const width=parseNumber(svg.getAttribute('width')), height=parseNumber(svg.getAttribute('height')); if(width<=0||height<=0) throw new Error('SVG needs a valid viewBox or width/height.'); viewBox={x:0,y:0,width,height}} const gradients=parseGradients(svg,viewBox), clipPaths=parseClipPaths(svg), supported=new Set(['rect','circle','ellipse','line','polyline','polygon','path']), shapes=[];
+      const localOpacityOf=(node)=>{ const style=parseStyleString(node.getAttribute('style')); return parseOpacity(node.getAttribute('opacity')??style.opacity,1); };
+      const collectClipShapes=(cpNode, baseTransform)=>{ const out=[]; const walkClip=(node, currentTransform)=>{ if(!node||node.nodeType!==1) return; const tag=node.tagName.toLowerCase(); if(tag==='defs'||tag==='clippath') return; const nextTransform=matMul(currentTransform, parseTransformMatrix(node.getAttribute('transform')||'')); if(supported.has(tag)){ const shape=primitiveToShape(node,gradients,viewBox,opts,1,nextTransform); if(shape){
+            // v109: clip paths should use the same fill-path logic that works for visible fills.
+            // Clear stroke contribution, but preserve path fill/sign/fillContours for <path> clips.
+            shape.stroke=null; shape.strokeWidth=0; shape.strokeSegments=[];
+            if(!shape.fill) shape.fill={type:'solid',color:{r:255,g:255,b:255,a:1}};
+            const clipStyle = parseStyleString(node.getAttribute('style'));
+            const clipRule = node.getAttribute('clip-rule') ?? clipStyle['clip-rule'] ?? null;
+            if(clipRule==='evenodd' || clipRule==='nonzero') shape.fillRule = clipRule;
+            if(shape.tag==='path'){
+              // Preserve the primitiveToShape output exactly; only ensure closed fill-like behavior.
+              if(shape.signSegments&&shape.signSegments.length) shape.signSegments=sanitizeSegments(closeSubpathsForFill(shape.signSegments));
+              if(shape.fillSegments&&shape.fillSegments.length) shape.fillSegments=sanitizeSegments(closeSubpathsForFill(shape.fillSegments));
+              if((!shape.fillContours || !shape.fillContours.length) && shape.fillSegments && shape.fillSegments.length){
+                const topoFillContours = flattenSegmentsToContoursBySubpaths(shape.fillSegments, shape);
+                if(topoFillContours.length) shape.fillContours = topoFillContours.map(c=>c.map(p=>({x:p.x,y:p.y})));
+              }
+            } else if((!shape.primitive) && ((shape.fillSegments&&shape.fillSegments.length)||(shape.signSegments&&shape.signSegments.length))){
+              const basis=sanitizeSegments(closeSubpathsForFill((shape.fillSegments&&shape.fillSegments.length)?shape.fillSegments:shape.signSegments));
+              const flattenedContours=flattenSegmentsForFill(basis, shape);
+              if(flattenedContours.length){ shape.fillContours=flattenedContours; }
+              shape.signSegments=basis.slice();
+            } else {
+              if(shape.signSegments&&shape.signSegments.length) shape.signSegments=sanitizeSegments(closeSubpathsForFill(shape.signSegments));
+              if(shape.fillSegments&&shape.fillSegments.length) shape.fillSegments=sanitizeSegments(closeSubpathsForFill(shape.fillSegments));
+            }
+            assignFallbackBounds(shape);
+            out.push(shape); } } for(const child of [...node.children]) walkClip(child, nextTransform); };
+        for(const child of [...cpNode.children]) walkClip(child, baseTransform); return out; };
+      const parseClipRef=(node,currentTransform)=>{ const style=parseStyleString(node.getAttribute('style')); const clipAttr=node.getAttribute('clip-path')??style['clip-path']??''; const m=String(clipAttr).match(/^url\(#([^\)]+)\)$/); const cp=(m&&clipPaths.has(m[1])) ? clipPaths.get(m[1]) : null; return cp ? collectClipShapes(cp,currentTransform) : null; };
+      const walk=(node,activeClipGroups,inheritedOpacity,currentTransform)=>{ if(!node||node.nodeType!==1) return; const tag=node.tagName.toLowerCase(); if(tag==='defs'||tag==='clippath') return; const nextTransform=matMul(currentTransform, parseTransformMatrix(node.getAttribute('transform')||'')); let nextClipGroups=activeClipGroups.slice(); const ownClip=parseClipRef(node,nextTransform); if(ownClip&&ownClip.length) nextClipGroups.push(ownClip); const nextInheritedOpacity = inheritedOpacity * localOpacityOf(node); if(supported.has(tag)){ const shape=primitiveToShape(node,gradients,viewBox,opts,inheritedOpacity,nextTransform); if(shape){ shape.clipGroups=nextClipGroups.map(group=>group.slice()); shapes.push(shape); } } for(const child of [...node.children]) walk(child,nextClipGroups,nextInheritedOpacity,nextTransform); };
+      walk(svg,[],1,matIdentity());
+      logDebug('parseSvg:end',{shapes:shapes.length,gradients:gradients.size,clipPaths:clipPaths.size,primitiveContourFills:shapes.filter(s=>s.fill&&s.fillContours?.length).length,viewBox}); return {svg,viewBox,shapes,gradients,clipPaths}}
+
+function emitGradientStops(lines,name,gradient){lines.push(`vec4 ${name}_color(float t) {`); lines.push(`    t = clamp(t, 0.0, 1.0);`); const stops=gradient.stops||[]; if(stops.length<=1){ const c=(stops[0]&&stops[0].color)||{r:255,g:255,b:255,a:1}; lines.push(`    return ${rgbaToVec4(c)};`);} else {for(let i=0;i<stops.length-1;i++){const a=stops[i], b=stops[i+1], cond=i===0?`if (t <= ${fmt(b.offset)})`:`else if (t <= ${fmt(b.offset)})`, denom=Math.max(1e-6,b.offset-a.offset); const aa=(a.color.a==null?1:a.color.a), ba=(b.color.a==null?1:b.color.a); lines.push(`    ${cond} {`); lines.push(`        float u = clamp((t - ${fmt(a.offset)}) / ${fmt(denom)}, 0.0, 1.0);`); lines.push(`        vec4 ca = ${rgbaToVec4(a.color)};`); lines.push(`        vec4 cb = ${rgbaToVec4(b.color)};`); lines.push(`        vec4 pa = vec4(ca.rgb * ca.a, ca.a);`); lines.push(`        vec4 pb = vec4(cb.rgb * cb.a, cb.a);`); lines.push(`        vec4 pm = mix(pa, pb, u);`); lines.push(`        if (pm.a <= 0.000001) return vec4(0.0);`); lines.push(`        return vec4(pm.rgb / pm.a, pm.a);`); lines.push(`    }`);} lines.push(`    return ${rgbaToVec4(stops[stops.length-1].color)};`);} lines.push(`}`); lines.push(``); }
+    function emitGradientFns(lines,gradients){ for(const gradient of gradients.values()){ const name='grad_'+gradient.id.replace(/[^a-zA-Z0-9_]/g,'_'); emitGradientStops(lines,name,gradient); const inv=gradient.invTransform||matIdentity(); if(gradient.kind==='linear'){ lines.push(`vec4 ${name}(vec2 p, vec4 bounds) {`); lines.push(`    vec2 gp = vec2(${fmt(inv.a)}*p.x + ${fmt(inv.c)}*p.y + ${fmt(inv.e)}, ${fmt(inv.b)}*p.x + ${fmt(inv.d)}*p.y + ${fmt(inv.f)});`); if(gradient.units==='userSpaceOnUse'){ lines.push(`    vec2 origin = vec2(${fmt(gradient.x1)}, ${fmt(gradient.y1)});`); lines.push(`    vec2 target = vec2(${fmt(gradient.x2)}, ${fmt(gradient.y2)});`); } else { lines.push(`    vec2 origin = bounds.xy + bounds.zw * vec2(${fmt(gradient.x1)}, ${fmt(gradient.y1)});`); lines.push(`    vec2 target = bounds.xy + bounds.zw * vec2(${fmt(gradient.x2)}, ${fmt(gradient.y2)});`); } lines.push(`    vec2 axis = target - origin;`); lines.push(`    float denom = max(dot(axis, axis), 0.0000001);`); lines.push(`    float t = dot(gp - origin, axis) / denom;`); lines.push(`    return ${name}_color(t);`); lines.push(`}`); lines.push(``); } else if(gradient.kind==='radial'){ lines.push(`vec4 ${name}(vec2 p, vec4 bounds) {`); lines.push(`    vec2 gp = vec2(${fmt(inv.a)}*p.x + ${fmt(inv.c)}*p.y + ${fmt(inv.e)}, ${fmt(inv.b)}*p.x + ${fmt(inv.d)}*p.y + ${fmt(inv.f)});`); if(gradient.units==='userSpaceOnUse'){ lines.push(`    vec2 center = vec2(${fmt(gradient.cx)}, ${fmt(gradient.cy)});`); lines.push(`    float radius = max(${fmt(gradient.r)}, 0.000001);`); } else { lines.push(`    vec2 center = bounds.xy + bounds.zw * vec2(${fmt(gradient.cx)}, ${fmt(gradient.cy)});`); lines.push(`    float radius = max(min(bounds.z, bounds.w) * ${fmt(gradient.r)}, 0.000001);`); } lines.push(`    float t = length(gp - center) / radius;`); lines.push(`    return ${name}_color(t);`); lines.push(`}`); lines.push(``); } } }
+    function paintExpr(paint,boundsExpr){ if(!paint) return 'vec4(0.0, 0.0, 0.0, 0.0)'; if(paint.type==='solid') return rgbaToVec4(paint.color); return `grad_${paint.gradientId.replace(/[^a-zA-Z0-9_]/g,'_')}(p, ${boundsExpr})`; }
+    function buildShader(parsed,originalSvg,opts){logDebug('buildShader:begin',{shapes:parsed.shapes.length,gradients:parsed.gradients.size}); const vb=parsed.viewBox, aaBase=0.0025*Math.max(vb.width,vb.height), aaStrength=clamp(opts.aaStrength ?? 1, 0, 1), aa=aaStrength<=0?0:aaBase*aaStrength, fitModeIndex=opts.fitMode==='stretch'?1:opts.fitMode==='fill'?2:0, lines=[]; lines.push(`// Made with SVG → Godot Fragment Shader App`); lines.push(`// Original SVG: ${escapeForCommentLine(originalSvg)}`); lines.push(`shader_type canvas_item;`); lines.push(``); lines.push(`uniform float aa_width = ${fmt(aa)};`); lines.push(`uniform int page_fit_mode = ${fitModeIndex}; // 0 shrink_to_fit, 1 stretch_to_fit, 2 scale_to_fill`); lines.push(`float aaFillAlpha(float d) { return aa_width <= 0.0 ? (d <= 0.0 ? 1.0 : 0.0) : (1.0 - smoothstep(0.0, aa_width, d)); }`); lines.push(`float aaStrokeAlpha(float halfWidth, float d) { return aa_width <= 0.0 ? (d <= halfWidth ? 1.0 : 0.0) : (1.0 - smoothstep(halfWidth, halfWidth + aa_width, d)); }`); lines.push(`float dot2(vec2 v) { return dot(v, v); }`); lines.push(`float sdSegment(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a; vec2 ba = b - a; float h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.0000001), 0.0, 1.0); return length(pa - ba * h); }`); lines.push(`float sdBezierQuadratic(vec2 pos, vec2 A, vec2 B, vec2 C) { vec2 a = B - A; vec2 b = A - 2.0 * B + C; vec2 c = a * 2.0; vec2 d = A - pos; float bb = dot(b, b); if (bb < 0.0000001) return sdSegment(pos, A, C); float kk = 1.0 / bb; float kx = kk * dot(a, b); float ky = kk * (2.0 * dot(a, a) + dot(d, b)) / 3.0; float kz = kk * dot(d, a); float res = 0.0; float p = ky - kx * kx; float p3 = p * p * p; float q = kx * (2.0 * kx * kx - 3.0 * ky) + kz; float h = q * q + 4.0 * p3; if (h >= 0.0) { h = sqrt(h); vec2 x = (vec2(h, -h) - q) / 2.0; vec2 uvv = sign(x) * pow(abs(x), vec2(1.0 / 3.0)); float t = clamp(uvv.x + uvv.y - kx, 0.0, 1.0); res = dot2(d + (c + b * t) * t); } else { float z = sqrt(-p); float v = acos(clamp(q / (p * z * 2.0), -1.0, 1.0)) / 3.0; float m = cos(v); float n = sin(v) * 1.732050808; vec3 t = clamp(vec3(m + m, -n - m, n - m) * z - kx, 0.0, 1.0); res = min(dot2(d + (c + b * t.x) * t.x), dot2(d + (c + b * t.y) * t.y)); } return sqrt(res); }`); lines.push(`vec2 parityProbePoint(vec2 p) { return vec2(p.x, p.y + max(aa_width * 0.37, 0.0005)); }`); lines.push(`float fillMaskEvenOdd(vec2 p, vec2 a, vec2 b) { bool cond = ((a.y > p.y) != (b.y > p.y)); float xHit = (b.x - a.x) * (p.y - a.y) / max(0.0000001, (b.y - a.y)) + a.x; return (cond && p.x < xHit) ? 1.0 : 0.0; }`); lines.push(`int windingContribution(vec2 p, vec2 a, vec2 b) { bool up = a.y <= p.y && b.y > p.y; bool down = a.y > p.y && b.y <= p.y; float isLeft = (b.x - a.x) * (p.y - a.y) - (p.x - a.x) * (b.y - a.y); if (up && isLeft > 0.0) return 1; if (down && isLeft < 0.0) return -1; return 0; }
+float evalQuadratic1(float a, float b, float c, float t) { return a*(1.0-t)*(1.0-t) + 2.0*b*(1.0-t)*t + c*t*t; }
+float quadCrossEvenOdd(vec2 p, vec2 A, vec2 B, vec2 C) { float ay = A.y - 2.0*B.y + C.y; float by = 2.0*(B.y - A.y); float cy = A.y - p.y; float hits = 0.0; if (abs(ay) < 0.0000001) { if (abs(by) < 0.0000001) return 0.0; float t = -cy / by; if (t >= 0.0 && t < 1.0) { float dy = by; float x = evalQuadratic1(A.x, B.x, C.x, t); if (x > p.x && abs(dy) > 0.00001) hits += 1.0; } return mod(hits, 2.0); } float disc = by*by - 4.0*ay*cy; if (disc < 0.0) return 0.0; float sdisc = sqrt(disc); float t0 = (-by - sdisc) / (2.0*ay); float t1 = (-by + sdisc) / (2.0*ay); if (t0 >= 0.0 && t0 < 1.0) { float dy = 2.0*ay*t0 + by; float x = evalQuadratic1(A.x, B.x, C.x, t0); if (x > p.x && abs(dy) > 0.00001) hits += 1.0; } if (t1 >= 0.0 && t1 < 1.0 && abs(t1 - t0) > 0.00001) { float dy = 2.0*ay*t1 + by; float x = evalQuadratic1(A.x, B.x, C.x, t1); if (x > p.x && abs(dy) > 0.00001) hits += 1.0; } return mod(hits, 2.0); }
+int quadWindingContribution(vec2 p, vec2 A, vec2 B, vec2 C) { float ay = A.y - 2.0*B.y + C.y; float by = 2.0*(B.y - A.y); float cy = A.y - p.y; int winding = 0; if (abs(ay) < 0.0000001) { if (abs(by) < 0.0000001) return 0; float t = -cy / by; if (t >= 0.0 && t < 1.0) { float dy = by; float x = evalQuadratic1(A.x, B.x, C.x, t); if (x > p.x && abs(dy) > 0.00001) winding += dy > 0.0 ? 1 : -1; } return winding; } float disc = by*by - 4.0*ay*cy; if (disc < 0.0) return 0; float sdisc = sqrt(disc); float t0 = (-by - sdisc) / (2.0*ay); float t1 = (-by + sdisc) / (2.0*ay); if (t0 >= 0.0 && t0 < 1.0) { float dy = 2.0*ay*t0 + by; float x = evalQuadratic1(A.x, B.x, C.x, t0); if (x > p.x && abs(dy) > 0.00001) winding += dy > 0.0 ? 1 : -1; } if (t1 >= 0.0 && t1 < 1.0 && abs(t1 - t0) > 0.00001) { float dy = 2.0*ay*t1 + by; float x = evalQuadratic1(A.x, B.x, C.x, t1); if (x > p.x && abs(dy) > 0.00001) winding += dy > 0.0 ? 1 : -1; } return winding; }`); lines.push(`float sdBox(vec2 p, vec2 halfSize) { vec2 d = abs(p) - halfSize; return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0); }`); lines.push(`float sdRoundedBox(vec2 p, vec2 halfSize, float r) { vec2 q = abs(p) - halfSize + vec2(r); return length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - r; }`); lines.push(`float sdEllipseApprox(vec2 p, vec2 r) { vec2 q = p / max(r, vec2(0.000001)); float k = length(q); float rr = min(r.x, r.y); return (k - 1.0) * rr; }`); lines.push(`float sdArc(vec2 p, vec2 sc, float ra, float rb) { p.x = abs(p.x); return ((sc.y*p.x>sc.x*p.y) ? length(p-sc*ra) : abs(length(p)-ra)) - rb; }
+float sdFillArc(vec2 p, vec2 sc, float ra) { p.x = abs(p.x); return (sc.y*p.x>sc.x*p.y) ? length(p-sc*ra) : abs(length(p)-ra); }`); lines.push(`void applyLayer(inout vec3 col, vec3 layer, float alpha) { col = mix(col, layer, clamp(alpha, 0.0, 1.0)); }`); lines.push(`void applyLayerPaint(inout vec3 col, vec4 paint, float alpha) { applyLayer(col, paint.rgb, alpha * paint.a); }`);
+      lines.push(`float fillInsideRect(vec2 p, vec2 center, vec2 halfSize) { return sdBox(p - center, halfSize) <= 0.0 ? 1.0 : 0.0; }`);
+      lines.push(`float fillInsideRoundedRect(vec2 p, vec2 center, vec2 halfSize, float r) { return sdRoundedBox(p - center, halfSize, r) <= 0.0 ? 1.0 : 0.0; }`);
+      lines.push(`float fillInsideCircle(vec2 p, vec2 center, float r) { return length(p - center) <= r ? 1.0 : 0.0; }`);
+      lines.push(`float fillInsideEllipse(vec2 p, vec2 center, vec2 r) { return sdEllipseApprox(p - center, r) <= 0.0 ? 1.0 : 0.0; }`); lines.push(``); emitGradientFns(lines,parsed.gradients); lines.push(`void fragment() {`); lines.push(`    vec2 uv = UV;`); lines.push(`    vec2 view_size = vec2(${fmt(vb.width)}, ${fmt(vb.height)});`); lines.push(`    float view_aspect = view_size.x / max(view_size.y, 0.000001);`); lines.push(`    vec2 content_size = vec2(1.0);`); lines.push(`    bool outside_page = false;`); lines.push(`    if (page_fit_mode == 0) {`); lines.push(`        content_size = (view_aspect >= 1.0) ? vec2(1.0, 1.0 / view_aspect) : vec2(view_aspect, 1.0);`); lines.push(`    } else if (page_fit_mode == 2) {`); lines.push(`        content_size = (view_aspect >= 1.0) ? vec2(view_aspect, 1.0) : vec2(1.0, 1.0 / view_aspect);`); lines.push(`    }`); lines.push(`    vec2 origin = (vec2(1.0) - content_size) * 0.5;`); lines.push(`    vec2 local_uv = page_fit_mode == 1 ? uv : (uv - origin) / content_size;`); lines.push(`    if (page_fit_mode == 0) {`); lines.push(`        outside_page = local_uv.x < 0.0 || local_uv.x > 1.0 || local_uv.y < 0.0 || local_uv.y > 1.0;`); lines.push(`        local_uv = clamp(local_uv, 0.0, 1.0);`); lines.push(`    }`); lines.push(`    vec2 p = vec2(mix(${fmt(vb.x)}, ${fmt(vb.x+vb.width)}, local_uv.x), mix(${fmt(vb.y)}, ${fmt(vb.y+vb.height)}, local_uv.y));`); lines.push(`    bool grid_hit = false;`); lines.push(`    vec3 grid_col = vec3(0.0);`); lines.push(`    vec3 col = vec3(0.0);`); lines.push(`    if (outside_page) {`); lines.push(`        COLOR = vec4(0.0, 0.0, 0.0, 0.0);`); lines.push(`    } else {`); lines.push(``);
+      if(parsed.gridAccel && parsed.gridAccel.rects && parsed.gridAccel.rects.length){
+        parsed.gridAccel.rects.forEach(rect=>{
+          const x0=fmt(rect.x), y0=fmt(rect.y), x1=fmt(rect.x+rect.w), y1=fmt(rect.y+rect.h);
+          const rgba=rect.color.split(',').map(Number);
+          lines.push(`        if (!grid_hit && p.x >= ${x0} && p.x < ${x1} && p.y >= ${y0} && p.y < ${y1}) { grid_hit = true; grid_col = vec3(${(rgba[0]/255).toFixed(6)}, ${(rgba[1]/255).toFixed(6)}, ${(rgba[2]/255).toFixed(6)}); }`);
+        });
+        lines.push(`        if (grid_hit) { COLOR = vec4(grid_col, 1.0); } else {`);
+      }
+      const emitPseudoAlpha=(shape,varName,withEdge)=>{lines.push(`    float ${varName} = 0.0;`); lines.push(`    {`); lines.push(`        vec2 parity_p = parityProbePoint(p);`); if(withEdge) lines.push(`        float minD = 1e9;`); if((shape.fillRule||opts.fillRule)==='evenodd') lines.push(`        float crossings = 0.0;`); else lines.push(`        int winding = 0;`); const signBasis = shape.signSegments; for(const seg of signBasis){ if(seg.type==='quad'){ if((shape.fillRule||opts.fillRule)==='evenodd') lines.push(`        crossings += quadCrossEvenOdd(parity_p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}, ${vec2Code(seg.p2)});`); else lines.push(`        winding += quadWindingContribution(parity_p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}, ${vec2Code(seg.p2)});`); } else { if((shape.fillRule||opts.fillRule)==='evenodd') lines.push(`        crossings += fillMaskEvenOdd(parity_p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)});`); else lines.push(`        winding += windingContribution(parity_p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)});`); }} if(withEdge){ for(const seg of shape.fillSegments){ if(seg.implicit_fill_close) continue; if(seg.type==='quad') lines.push(`        minD = min(minD, sdBezierQuadratic(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}, ${vec2Code(seg.p2)}));`); else if(seg.type==='arc_exact') lines.push(`        { vec2 q = p - vec2(${fmt(seg.cx)}, ${fmt(seg.cy)}); q = vec2(${fmt(Math.cos(seg.rot))}*q.x - ${fmt(Math.sin(seg.rot))}*q.y, ${fmt(Math.sin(seg.rot))}*q.x + ${fmt(Math.cos(seg.rot))}*q.y); minD = min(minD, sdFillArc(q, vec2(${fmt(seg.sc.x)}, ${fmt(seg.sc.y)}), ${fmt(seg.ra)})); }`); else lines.push(`        minD = min(minD, sdSegment(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}));`);} } if((shape.fillRule||opts.fillRule)==='evenodd') lines.push(`        float inside = mod(crossings, 2.0);`); else lines.push(`        float inside = abs(float(winding)) > 0.0 ? 1.0 : 0.0;`); if(withEdge){ lines.push(`        float edge = aaFillAlpha(minD);`); lines.push(`        ${varName} = max(inside, edge);`); } else { lines.push(`        ${varName} = inside;`); } lines.push(`    }`)};
+      const emitClipAlpha=(shape,varName)=>{ if(!shape.clipGroups||!shape.clipGroups.length){ lines.push(`    float ${varName} = 1.0;`); return; } lines.push(`    float ${varName} = 1.0;`); shape.clipGroups.forEach((clipGroup,groupIndex)=>{ const groupVar=`${varName}_group_${groupIndex}`; lines.push(`    float ${groupVar} = 0.0;`); clipGroup.forEach((clipShape,clipIndex)=>{ const local=`${groupVar}_part_${clipIndex}`; const pr=clipShape.primitive; if(pr?.kind==='rect'){ const cx=pr.x+pr.w*.5, cy=pr.y+pr.h*.5; if((pr.rx||0)>0||(pr.ry||0)>0){ const r=Math.min(pr.rx||0,pr.ry||0), hx=pr.w*.5, hy=pr.h*.5; lines.push(`    ${groupVar} = max(${groupVar}, fillInsideRoundedRect(p, vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(hx)}, ${fmt(hy)}), ${fmt(r)}));`); } else { lines.push(`    ${groupVar} = max(${groupVar}, fillInsideRect(p, vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(pr.w*.5)}, ${fmt(pr.h*.5)})));`); } } else if(pr?.kind==='circle'){ lines.push(`    ${groupVar} = max(${groupVar}, fillInsideCircle(p, vec2(${fmt(pr.cx)}, ${fmt(pr.cy)}), ${fmt(pr.r)}));`); } else if(pr?.kind==='ellipse'){ lines.push(`    ${groupVar} = max(${groupVar}, fillInsideEllipse(p, vec2(${fmt(pr.cx)}, ${fmt(pr.cy)}), vec2(${fmt(pr.rx)}, ${fmt(pr.ry)})));`); } else if(clipShape.tag==='path' && clipShape.fillContours && clipShape.fillContours.length===1){ lines.push(`    float ${local} = 0.0;`); lines.push(`    {`); lines.push(`      int winding = 0;`); lines.push(`      float minD = 1e9;`); const contour = clipShape.fillContours[0] || []; for(let i=0;i<contour.length;i++){ const a=contour[i], b=contour[(i+1)%contour.length]; if(!a || !b) continue; lines.push(`      winding += windingContribution(p, ${vec2Code(a)}, ${vec2Code(b)});`); lines.push(`      minD = min(minD, sdSegment(p, ${vec2Code(a)}, ${vec2Code(b)}));`); } if(clipShape.fillSegments&&clipShape.fillSegments.length){ for(const seg of clipShape.fillSegments){ if(seg.implicit_fill_close) continue; if(seg.type==='quad') lines.push(`      minD = min(minD, sdBezierQuadratic(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}, ${vec2Code(seg.p2)}));`); else if(seg.type==='arc_exact') lines.push(`      { vec2 q = p - vec2(${fmt(seg.cx)}, ${fmt(seg.cy)}); q = vec2(${fmt(Math.cos(seg.rot))}*q.x - ${fmt(Math.sin(seg.rot))}*q.y, ${fmt(Math.sin(seg.rot))}*q.x + ${fmt(Math.cos(seg.rot))}*q.y); minD = min(minD, sdFillArc(q, vec2(${fmt(seg.sc.x)}, ${fmt(seg.sc.y)}), ${fmt(seg.ra)})); }`); } } lines.push(`      float inside = abs(float(winding)) > 0.0 ? 1.0 : 0.0;`); lines.push(`      float edge = aaFillAlpha(minD);`); lines.push(`      ${local} = max(inside, edge);`); lines.push(`    }`); lines.push(`    ${groupVar} = max(${groupVar}, ${local});`); } else if(clipShape.tag==='path' && clipShape.fillContours && clipShape.fillContours.length){ lines.push(`    float ${local} = 0.0;`); lines.push(`    {`); lines.push(`      vec2 parity_p = parityProbePoint(p);`); lines.push(`      float crossings = 0.0;`); lines.push(`      float minD = 1e9;`);
+      for(const contour of clipShape.fillContours){
+        if(!contour || contour.length < 2) continue;
+        for(let i=0;i<contour.length;i++){
+          const a = contour[i], b = contour[(i+1)%contour.length];
+          if(!a || !b) continue;
+          lines.push(`      crossings += fillMaskEvenOdd(parity_p, ${vec2Code(a)}, ${vec2Code(b)});`);
+          lines.push(`      minD = min(minD, sdSegment(p, ${vec2Code(a)}, ${vec2Code(b)}));`);
+        }
+      }
+      if(clipShape.fillSegments && clipShape.fillSegments.length){
+        for(const seg of clipShape.fillSegments){
+          if(seg.implicit_fill_close) continue;
+          if(seg.type==='quad') lines.push(`      minD = min(minD, sdBezierQuadratic(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}, ${vec2Code(seg.p2)}));`);
+          else if(seg.type==='arc_exact') lines.push(`      { vec2 q = p - vec2(${fmt(seg.cx)}, ${fmt(seg.cy)}); q = vec2(${fmt(Math.cos(seg.rot))}*q.x - ${fmt(Math.sin(seg.rot))}*q.y, ${fmt(Math.sin(seg.rot))}*q.x + ${fmt(Math.cos(seg.rot))}*q.y); minD = min(minD, sdFillArc(q, vec2(${fmt(seg.sc.x)}, ${fmt(seg.sc.y)}), ${fmt(seg.ra)})); }`);
+          else lines.push(`      minD = min(minD, sdSegment(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}));`);
+        }
+      }
+      lines.push(`      float inside = mod(crossings, 2.0);`);
+      lines.push(`      float edge = aaFillAlpha(minD);`);
+      lines.push(`      ${local} = max(inside, edge);`);
+      lines.push(`    }`);
+      lines.push(`    ${groupVar} = max(${groupVar}, ${local});`);
+      } else if(clipShape.fillSegments&&clipShape.fillSegments.length){ emitPseudoAlpha(clipShape, local, true); lines.push(`    ${groupVar} = max(${groupVar}, ${local});`); } }); lines.push(`    ${varName} *= ${groupVar};`); }); };
+      const emitFillPseudo=(shape,boundsExpr,fillAlphaVar,clipAlphaVar)=>{ emitPseudoAlpha(shape,fillAlphaVar,true); lines.push(`    applyLayerPaint(col, ${paintExpr(shape.fill,boundsExpr)}, ${fillAlphaVar} * ${clipAlphaVar} * ${fmt(shape.opacity*shape.fillOpacity)});`); };
+      const emitStroke=(shape,boundsExpr,clipAlphaVar)=>{lines.push(`    {`); lines.push(`        float d = 1e9;`); for(const seg of shape.strokeSegments){if(seg.type==='quad') lines.push(`        d = min(d, sdBezierQuadratic(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}, ${vec2Code(seg.p2)}));`); else if(seg.type==='arc_exact') lines.push(`        { vec2 q = p - vec2(${fmt(seg.cx)}, ${fmt(seg.cy)}); q = vec2(${fmt(Math.cos(seg.rot))}*q.x - ${fmt(Math.sin(seg.rot))}*q.y, ${fmt(Math.sin(seg.rot))}*q.x + ${fmt(Math.cos(seg.rot))}*q.y); d = min(d, sdArc(q, vec2(${fmt(seg.sc.x)}, ${fmt(seg.sc.y)}), ${fmt(seg.ra)}, 0.0)); }`); else lines.push(`        d = min(d, sdSegment(p, ${vec2Code(seg.p0)}, ${vec2Code(seg.p1)}));`);} lines.push(`        float a = aaStrokeAlpha(${fmt(shape.strokeWidth*.5)}, d);`); lines.push(`        applyLayerPaint(col, ${paintExpr(shape.stroke,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.strokeOpacity)});`); lines.push(`    }`)};
+      const emitAccurate=(shape,idx)=>{const b=shape.bounds, boundsExpr=`vec4(${fmt(b.cullMinX)}, ${fmt(b.cullMinY)}, ${fmt(b.cullWidth)}, ${fmt(b.cullHeight)})`; const clipAlphaVar=`shape_clip_alpha_${idx}`; const fillAlphaVar=`shape_fill_alpha_${idx}`; lines.push(`    // Shape ${idx+1}: ${shape.tag}`); lines.push(`    {`); emitClipAlpha(shape,clipAlphaVar); const pr=shape.primitive; if(pr?.kind==='rect'){const cx=pr.x+pr.w*.5, cy=pr.y+pr.h*.5; if((pr.rx||0)>0||(pr.ry||0)>0){const r=Math.min(pr.rx||0,pr.ry||0), hx=pr.w*.5, hy=pr.h*.5; if(shape.fill) lines.push(`    { float d = sdRoundedBox(p - vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(hx)}, ${fmt(hy)}), ${fmt(r)}); float a = aaFillAlpha(d); applyLayerPaint(col, ${paintExpr(shape.fill,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.fillOpacity)}); }`); if(shape.stroke&&shape.strokeWidth>0) lines.push(`    { float d = abs(sdRoundedBox(p - vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(hx)}, ${fmt(hy)}), ${fmt(r)})); float a = aaStrokeAlpha(${fmt(shape.strokeWidth*.5)}, d); applyLayerPaint(col, ${paintExpr(shape.stroke,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.strokeOpacity)}); }`); lines.push(`    }`); lines.push(``); return} if(shape.fill) lines.push(`    { float d = sdBox(p - vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(pr.w*.5)}, ${fmt(pr.h*.5)})); float a = aaFillAlpha(d); applyLayerPaint(col, ${paintExpr(shape.fill,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.fillOpacity)}); }`); if(shape.stroke&&shape.strokeWidth>0) lines.push(`    { float d = abs(sdBox(p - vec2(${fmt(cx)}, ${fmt(cy)}), vec2(${fmt(pr.w*.5)}, ${fmt(pr.h*.5)}))); float a = aaStrokeAlpha(${fmt(shape.strokeWidth*.5)}, d); applyLayerPaint(col, ${paintExpr(shape.stroke,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.strokeOpacity)}); }`); lines.push(`    }`); lines.push(``); return} if(pr?.kind==='circle'){if(shape.fill) lines.push(`    { float d = length(p - vec2(${fmt(pr.cx)}, ${fmt(pr.cy)})) - ${fmt(pr.r)}; float a = aaFillAlpha(d); applyLayerPaint(col, ${paintExpr(shape.fill,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.fillOpacity)}); }`); if(shape.stroke&&shape.strokeWidth>0) lines.push(`    { float d = abs(length(p - vec2(${fmt(pr.cx)}, ${fmt(pr.cy)})) - ${fmt(pr.r)}); float a = aaStrokeAlpha(${fmt(shape.strokeWidth*.5)}, d); applyLayerPaint(col, ${paintExpr(shape.stroke,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.strokeOpacity)}); }`); lines.push(`    }`); lines.push(``); return} if(pr?.kind==='ellipse'){if(shape.fill) lines.push(`    { float d = sdEllipseApprox(p - vec2(${fmt(pr.cx)}, ${fmt(pr.cy)}), vec2(${fmt(pr.rx)}, ${fmt(pr.ry)})); float a = aaFillAlpha(d); applyLayerPaint(col, ${paintExpr(shape.fill,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.fillOpacity)}); }`); if(shape.stroke&&shape.strokeWidth>0) lines.push(`    { float d = abs(sdEllipseApprox(p - vec2(${fmt(pr.cx)}, ${fmt(pr.cy)}), vec2(${fmt(pr.rx)}, ${fmt(pr.ry)}))); float a = aaStrokeAlpha(${fmt(shape.strokeWidth*.5)}, d); applyLayerPaint(col, ${paintExpr(shape.stroke,boundsExpr)}, a * ${clipAlphaVar} * ${fmt(shape.opacity*shape.strokeOpacity)}); }`); lines.push(`    }`); lines.push(``); return} if(shape.fill&&shape.fillSegments&&shape.fillSegments.length) emitFillPseudo(shape,boundsExpr,fillAlphaVar,clipAlphaVar); if(shape.stroke&&shape.strokeWidth>0&&shape.strokeSegments.length) emitStroke(shape,boundsExpr,clipAlphaVar); lines.push(`    }`); lines.push(``)};
+      parsed.shapes.forEach(emitAccurate); lines.push(`    COLOR = vec4(col, 1.0);`); if(parsed.gridAccel && parsed.gridAccel.rects && parsed.gridAccel.rects.length) lines.push(`        }`); lines.push(`    }`); lines.push(`}`); const shader=lines.join('\n'); logDebug('buildShader:end',{shaderLength:shader.length}); return shader}
+
+    function readOptions(){return {fitMode:el.fitMode.value,cubicMode:el.cubicMode.value,arcMode:el.arcMode.value,cubicSteps:clamp(parseInt(el.cubicSteps.value||'16',10),2,256),arcSteps:clamp(parseInt(el.arcSteps.value||'16',10),2,256),quadSteps:clamp(parseInt(el.quadSteps.value||'12',10),2,256),fillRule:el.fillRule.value,aaStrength:getAaStrength01(),gridAccel:!!el.gridAccel.checked,gridAcceptance:(el.gridAcceptance?.value||'orange'),gridTileSize:clamp(parseInt(el.gridTileSize.value||'16',10),4,128)}}
+    async function runPipeline(svgText,okMessage){
+      const runToken = ++state.runToken;
+      logDebug('runPipeline:start',{hasText:!!svgText,length:svgText?svgText.length:0});
+      if(!svgText||!svgText.trim()){state.svgText=''; state.parsed=null; state.generated=''; el.output.value=''; updateOutputGutter(); el.previewStage.innerHTML=''; el.summaryRow.innerHTML=''; previewState.hasContent=false; el.copyBtn.disabled=true; setStatus('Waiting for SVG.','hint'); if(el.topologyReport) el.topologyReport.textContent='Topology report unavailable.'; return}
+      try{
+        const opts=readOptions();
+        logDebug('runPipeline:options',opts);
+        const parsed=parseSvg(svgText,opts);
+        parsed.gridAccel = await buildGridAcceleration(svgText, parsed, opts);
+        if(runToken !== state.runToken) return;
+        const shader=buildShader(parsed,svgText,opts);
+        state.svgText=svgText; state.parsed=parsed; state.generated=shader;
+        renderPreview(svgText); renderSummary(parsed); renderTopologyReport(parsed);
+        el.output.value=shader; updateOutputGutter(); el.copyBtn.disabled=false;
+        void tryAutoCopyShader();
+        setStatus(okMessage,'good');
+        logDebug('runPipeline:success',{shaderLength:shader.length,gridRects:parsed.gridAccel?parsed.gridAccel.rects.length:0});
+      } catch(err){
+        if(runToken !== state.runToken) return;
+        console.error(err);
+        logDebug('runPipeline:error',{name:err?.name,message:err?.message,stack:err?.stack});
+        state.parsed=null; state.generated=''; el.output.value=''; updateOutputGutter(); el.copyBtn.disabled=true;
+        setStatus(err?.message||'Failed to import SVG.','bad');
+      }
+    }
+
+    function bootApp(){
+      logDebug('boot:begin');
+      try {
+        el.svgInput.value = DEMO_SVG;
+        state.userEditedSvg = false;
+        logDebug('boot:demo-seeded',{length:DEMO_SVG.length});
+        runPipeline(DEMO_SVG,'Demo loaded and shader updated.');
+      } catch (err) {
+        logDebug('boot:error',{name:err?.name,message:err?.message,stack:err?.stack});
+        setStatus(err?.message || 'Boot failed.','bad');
+      }
+      logDebug('boot:end');
+    }
+
+    el.fileInput.addEventListener('change',async e=>{logDebug('fileInput:change'); const file=e.target.files?.[0]; if(!file) return; const text=await file.text(); logDebug('fileInput:file-read',{name:file.name,length:text.length}); el.svgInput.value=text; state.userEditedSvg=true; runPipeline(text,`Loaded ${file.name}.`)});
+    el.importBtn.addEventListener('click',()=>{logDebug('importBtn:click',{length:el.svgInput.value.length,mode:'file_always',userEditedSvg:state.userEditedSvg}); el.fileInput.value=''; el.fileInput.click();});
+
+    el.clearEditorBtn.addEventListener('click',()=>{ logDebug('editor:clear'); el.svgInput.value=''; state.userEditedSvg=false; updateEditorGutter(); runPipeline('','Waiting for SVG.'); });
+    el.copySvgBtn.addEventListener('click',async()=>{ const text=el.svgInput.value||''; await navigator.clipboard.writeText(text); setStatus('SVG copied to clipboard.','good'); logDebug('svg:copied',{length:text.length}); });
+    el.downloadSvgBtn.addEventListener('click',()=>{ const text=el.svgInput.value||''; downloadText('source.svg', text); setStatus('SVG downloaded.','good'); logDebug('svg:downloaded',{length:text.length}); });
+    el.prettifySvgBtn.addEventListener('click',()=>{ try{ const out=prettifySvgText(el.svgInput.value||''); el.svgInput.value=out; state.userEditedSvg=true; updateEditorGutter(); runPipeline(out,'SVG prettified and shader regenerated.'); logDebug('svg:prettified',{length:out.length}); } catch(err){ setStatus(err.message||'Prettify failed.','bad'); logDebug('svg:prettify:error',{message:err.message}); } });
+    el.optimizeSvgBtn.addEventListener('click',()=>{ try{ const out=optimizeSvgText(el.svgInput.value||''); el.svgInput.value=out; state.userEditedSvg=true; updateEditorGutter(); runPipeline(out,'SVG optimized and shader regenerated.'); logDebug('svg:optimized',{length:out.length}); } catch(err){ setStatus(err.message||'Optimize failed.','bad'); logDebug('svg:optimize:error',{message:err.message}); } });
+    el.fitPreviewBtn.addEventListener('click',()=>{logDebug('preview:fit'); if(previewState.hasContent) fitPreview();});
+    el.resetPreviewBtn.addEventListener('click',()=>{logDebug('preview:reset'); if(previewState.hasContent) resetPreviewZoom();});
+    el.zoomInBtn.addEventListener('click',()=>{logDebug('preview:zoomIn'); zoomPreviewAt(1.2);});
+    el.zoomOutBtn.addEventListener('click',()=>{logDebug('preview:zoomOut'); zoomPreviewAt(1/1.2);});
+    el.copyBtn.addEventListener('click',async()=>{logDebug('copyBtn:click',{hasShader:!!state.generated,shaderLength:state.generated?state.generated.length:0}); if(!state.generated) return; await navigator.clipboard.writeText(state.generated); setStatus('Shader copied to clipboard.','good')});
+    el.clearLogBtn.addEventListener('click',()=>{el.debugLog.value=''; logDebug('debug:cleared')});
+    el.runBootBtn.addEventListener('click',()=>{logDebug('runBootBtn:click'); bootApp()});
+    el.gridOverlayOpacity.addEventListener('input',()=>{ applyGridOverlayOpacity(); });
+    el.gridOverlayOpacity.addEventListener('change',()=>{ applyGridOverlayOpacity(); });
+    if(el.showTopologyOverlay){ const rerenderTopo=()=>{ logDebug('settings:change',{id:'showTopologyOverlay',value:!!el.showTopologyOverlay.checked}); const svgText=(typeof state.svgText==='string' && state.svgText.trim()) ? state.svgText : ((el.svgInput && typeof el.svgInput.value==='string') ? el.svgInput.value : ''); if(svgText && state.parsed){ renderPreview(svgText); renderSummary(state.parsed); renderTopologyReport(state.parsed); } }; el.showTopologyOverlay.addEventListener('change', rerenderTopo); el.showTopologyOverlay.addEventListener('input', rerenderTopo); el.showTopologyOverlay.addEventListener('click', rerenderTopo); }
+    [el.fitMode,el.cubicMode,el.arcMode,el.cubicSteps,el.arcSteps,el.quadSteps,el.fillRule,el.aaStrength,el.gridAccel,el.gridAcceptance,el.gridTileSize].forEach(node=>node.addEventListener('change',()=>{logDebug('settings:change',{id:node.id,value:(node.type==='checkbox'?node.checked:node.value),hasStateText:!!state.svgText,inputLength:el.svgInput.value.length}); if(state.svgText||el.svgInput.value.trim()) runPipeline(el.svgInput.value,'Settings changed and shader updated.')}));
+    let svgDebounce=null; el.svgInput.addEventListener('input',()=>{state.userEditedSvg=true; updateEditorGutter(); logDebug('svgInput:input',{length:el.svgInput.value.length}); clearTimeout(svgDebounce); svgDebounce=setTimeout(()=>{logDebug('svgInput:debounced-run',{trimmedLength:el.svgInput.value.trim().length}); runPipeline(el.svgInput.value,el.svgInput.value.trim()?'SVG updated and shader regenerated.':'Waiting for SVG.')},400)});
+    el.svgInput.addEventListener('scroll',()=>{ el.editorGutter.scrollTop = el.svgInput.scrollTop; });
+    el.output.addEventListener('scroll',()=>{ el.outputGutter.scrollTop = el.output.scrollTop; });
+    el.output.addEventListener('input',()=>{ updateOutputGutter(); });
+
+    el.previewViewport.addEventListener('pointerdown',e=>{ if(!previewState.hasContent) return; previewState.dragging=true; previewState.lastX=e.clientX; previewState.lastY=e.clientY; el.previewViewport.classList.add('dragging'); try{el.previewViewport.setPointerCapture(e.pointerId);}catch(_){ } });
+    el.previewViewport.addEventListener('pointermove',e=>{ if(!previewState.dragging) return; const dx=e.clientX-previewState.lastX, dy=e.clientY-previewState.lastY; previewState.lastX=e.clientX; previewState.lastY=e.clientY; previewState.tx += dx; previewState.ty += dy; updatePreviewTransform(); });
+    const endPreviewDrag=e=>{ previewState.dragging=false; el.previewViewport.classList.remove('dragging'); try{el.previewViewport.releasePointerCapture(e.pointerId);}catch(_){ } };
+    el.previewViewport.addEventListener('pointerup',endPreviewDrag);
+    el.previewViewport.addEventListener('pointercancel',endPreviewDrag);
+    el.previewViewport.addEventListener('wheel',e=>{ if(!previewState.hasContent) return; e.preventDefault(); const rect=el.previewViewport.getBoundingClientRect(); const mx=e.clientX-rect.left, my=e.clientY-rect.top; const prevScale=previewState.scale; const factor=Math.exp(-e.deltaY*0.0012); const nextScale=clamp(prevScale*factor,0.1,20); const wx=(mx-previewState.tx)/prevScale; const wy=(my-previewState.ty)/prevScale; previewState.scale=nextScale; previewState.tx=mx-wx*nextScale; previewState.ty=my-wy*nextScale; updatePreviewTransform(); }, {passive:false});
+    window.addEventListener('resize',()=>{ if(previewState.hasContent) fitPreview(); });
+
+    logDebug('script:loaded:before-boot');
+    updateEditorGutter();
+    updateGridOverlayOpacityLabel();
+    if(el.aaStrength){ const apply=()=>{ updateAaStrengthLabel(); }; el.aaStrength.addEventListener('input', apply); el.aaStrength.addEventListener('change', apply); updateAaStrengthLabel(); }
+    bootApp();
+  </script>
+</body>
+</html>
