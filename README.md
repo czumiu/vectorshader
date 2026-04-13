@@ -1,136 +1,166 @@
 # vectorshader
 
-## Clean-slate architecture proposal (standalone HTML app)
+vectorshader is a standalone HTML app that compiles practical SVG artwork into a Godot `canvas_item` fragment shader.
 
-This repository currently contains historical reference snapshots and a debugging SVG corpus.
-The recommended next step is to rebuild as **one standalone HTML file** with clear internal boundaries,
-using the old versions only as behavioral references.
+It is not a full SVG renderer. It is a bounded compiler aimed at browser-faithful visible output for common vector art, with honest fallbacks where exact support is not worth the cost or risk.
 
-## What we learned from the reference files
+## What it is for
 
-- `v46` is the key visible-fill stability reference (endpoint leak fixes, closed-loop sign behavior).
-- `v122` has a useful clip-path insight (single-loop clip winding) but should be treated as a narrow, gated behavior instead of a global rule.
-- Later large versions blend UI/debug/render concerns too tightly, which made regressions hard to isolate.
-- `debug shapes.svg` should become the canonical regression fixture for fill, clip, gradients, and hole/subpath behavior.
+Use vectorshader when you want to:
 
-## Product constraints for MVP
+- take static SVG artwork,
+- preserve the visible 2D result as closely as practical,
+- emit a single Godot shader,
+- and avoid hand-rebuilding the art as shader code.
 
-MVP flow:
-1. Upload SVG.
-2. Parse + compile shader.
-3. Automatically copy shader text to clipboard when possible.
-4. Any setting change re-compiles and re-copies.
+## Product stance
 
-Intentional non-goals for MVP:
-- No animated SVG support.
-- No text (must be converted to paths before import).
-- No advanced stroke joins/caps beyond round behavior.
-- Blend-layer support can be deferred behind a capability flag.
+vectorshader prefers:
 
-## Recommended architecture
+- browser-visible correctness over editor-specific behavior,
+- strong primitive recovery where confidence is high,
+- compile-time work over runtime work,
+- honest approximation over fake exactness,
+- and bounded scope over full SVG compliance.
 
-Keep one `index.html`, but split JS into explicit pipeline modules (by section + namespace), with immutable stage outputs.
+Inkscape is useful for authoring and reduction, but when browsers disagree with Inkscape, browser output is the authority.
 
-### 1) App shell (`AppController`)
+## Current stable behavior
 
-Responsibilities:
-- Wire UI events (file upload, text paste, setting toggles).
-- Trigger compile pipeline with debounce.
-- Clipboard side effect (best effort + status).
-- Persist last-good compile result and diagnostic state.
+The current stable branch has the following practical behavior:
 
-Rules:
-- No geometry logic.
-- No shader string templating.
+- aspect ratio output modes are implemented,
+- defs reachability cull is implemented,
+- clip-path handling is broadly hardened,
+- `clipPathUnits="objectBoundingBox"` works,
+- masks work at a practical luminance-first baseline,
+- invert-alpha mask edge cases have a narrow duct-tape fix,
+- `userSpaceOnUse` linear gradients are evaluated in inverse space,
+- degenerate `objectBoundingBox` gradients suppress paint,
+- single-segment linecap handling is corrected,
+- donut / hole fallback behavior is fixed,
+- invalid clip permissiveness has been tightened,
+- mask batching is conservative to avoid cross-group interference.
 
-### 2) Front-end parser (`SvgFrontend`)
+## Current supported input, in practice
 
-Responsibilities:
-- Parse SVG DOM.
-- Resolve styles/presentation attributes.
-- Resolve transforms.
-- Normalize primitives into a strict scene IR.
+Core visible geometry:
 
-Output type: `SceneIR` (pure data).
+- `<rect>`
+- `<circle>`
+- `<ellipse>`
+- `<line>`
+- `<polyline>`
+- `<polygon>`
+- `<path>`
+- `<g>`
 
-### 3) Geometry normalization core (`GeometryCore`) — most important
+Practical structural/resource support:
 
-Responsibilities:
-- Convert path commands to canonical segments.
-- Build **closed fill contours** explicitly (including synthetic closing edges).
-- Build curve-aware boundary representation for distance/AA.
-- Build clip-safe contour representation from the same normalized basis.
+- `<defs>` when referenced by visible output
+- `<use>`
+- `<symbol>` through `<use>`
+- linear gradients
+- radial gradients
+- clip paths
+- masks
 
-Output type: `ShapeTopologyIR`.
+## Current intentional non-goals
 
-Invariant examples:
-- Every contour used for inside/winding has explicit closure edge.
-- Fill and clip path evaluators consume the same normalized contour format.
-- Any gated fallback (parity vs winding) records why it was chosen.
+Not part of the current product guarantee:
 
-### 4) Shader IR builder (`ShaderIRBuilder`)
+- patterns
+- text rendering
+- filters as a general supported feature
+- markers
+- full CSS cascade
+- blend modes beyond normal source-over
+- full SVG compliance
+- perfect arbitrary boolean/path fill exactness
+- universally exact mixed-path stroke semantics in every case
 
-Responsibilities:
-- Convert topology + paint data to backend-neutral shader IR.
-- Keep backend-independent primitives (`segmentDistance`, `insideTest`, `paintSample`, `compose`).
+If text must survive visually, convert it to paths first.
 
-Output type: `ShaderIR`.
+## Important project-specific rules
 
-### 5) Backend emitter (`GodotEmitter`)
+### Browser is ground truth
 
-Responsibilities:
-- Emit Godot canvas_item fragment shader text from `ShaderIR`.
-- Avoid any geometry decisions here (emit only).
+When browser rendering and Inkscape rendering disagree, vectorshader follows browser behavior.
 
-Output type: `GeneratedShader` string.
+### Visible correctness beats mathematical purity
 
-Later: add `GLSLEmitter` without touching parser/topology code.
+A branch does not need to be a perfect signed distance field everywhere. If the visible boundary and compositing result are right, that is acceptable.
 
-### 6) Diagnostics + regression harness (`Diagnostics`)
+### Recovery should fail closed
 
-Responsibilities:
-- Per-stage timing + counts (segments, contours, closures, clip groups).
-- Toggleable debug panels that inspect IR snapshots.
-- Deterministic golden tests against fixtures (starting with `debug shapes.svg`).
+If a generic path can safely be promoted into a stronger primitive, do it. If that promotion is ambiguous, keep it generic.
 
-Minimum harness:
-- Run compile for fixture set.
-- Save generated shader + structured compile report JSON.
-- Diff reports between revisions.
+### Approximation is allowed
 
-## Data contracts (critical for avoiding “house-of-cards” regressions)
+General path fill and mixed-path stroke handling may be approximate as long as the visible result stays convincing and stable.
 
-Use strict stage contracts:
+### Scope is bounded
 
-- `SceneIR` → no backend details.
-- `ShapeTopologyIR` → normalized closed contours + edge primitives + clip topology.
-- `ShaderIR` → backend-neutral codegen graph.
-- `GeneratedShader` → final text only.
+The project should not drift into “full SVG renderer” ambitions. Unsupported features should stay unsupported until they are stable enough to promote.
 
-Each stage should be pure (input -> output) and unit-testable.
-Side effects (UI/clipboard/logging) stay in `AppController`.
+## Architecture, in one file
 
-## Suggested implementation order (slow + intentional)
+Even though the app lives in one standalone HTML file, it still has conceptual layers:
 
-1. Skeleton standalone `index.html` with module namespaces and compile button flow.
-2. Implement parser + path normalization only; print structured IR.
-3. Implement fill inside-testing + closure assertions.
-4. Implement edge distance + AA.
-5. Implement clipping using same topology core.
-6. Implement Godot emission.
-7. Add auto-clipboard on success + settings recompile/copy loop.
-8. Add fixture runner and baseline outputs for `debug shapes.svg`.
+1. SVG frontend parsing
+2. defs/resource registry
+3. geometry normalization and topology recovery
+4. render preparation
+5. Godot shader emission
+6. UI/debug shell
 
-## Sanity checks to run continuously
+Keeping those boundaries clear is important for future edits.
 
-- **Closure check:** every contour used in winding/parity must end with explicit closing edge.
-- **Dual evaluator check (debug mode):** compare parity and winding classifications for suspicious contours and log divergences.
-- **Emitter truth check:** hash generated shader blocks and diff by stage to ensure edits change active code paths.
-- **Round-trip check:** changing a UI optimization setting must only affect expected shader sections.
+## Workflow
 
-## Practical guidance from historical versions
+Typical workflow:
 
-- Borrow the visible-fill robustness ideas from `v46` first.
-- Borrow the single-loop clip winding behavior from `v122` only behind strict gating + diagnostics.
-- Do not start with grid acceleration or large UI/debug feature sets.
-- Prefer smaller core rewrite over patching one giant historical file.
+1. paste or load SVG into the app
+2. inspect browser preview
+3. compile shader
+4. compare Godot output against browser output
+5. reduce failures into small diagnostics
+6. patch one subsystem at a time
+
+## Testing policy
+
+Handcrafted diagnostics matter more than giant random files when debugging.
+
+Keep a permanent regression suite. Current must-keep tests include:
+
+- the six-case pack,
+- the corrected ribbon gradient diagnostic,
+- invert-alpha mask edge cases,
+- degenerate `objectBoundingBox` gradient cases,
+- masked sibling regressions,
+- nested `use + clip + mask` cases.
+
+## Editing rules
+
+Before changing code, ask:
+
+- Is this a real browser-faithfulness bug?
+- Is this already allowed by an approximation rule?
+- Is the feature in scope?
+- Will this destabilize clips, masks, gradients, or fallback behavior?
+- Is this a semantic fix, or an optimization disguised as one?
+
+## Versioning rule
+
+Use `vX` or `vX.Y`.
+
+- a fully landed new feature increments the major version,
+- a patch or fix increments the minor version,
+- do not switch to a three-part semver scheme unless the project owner explicitly changes that rule.
+
+## Current recommended next steps
+
+- keep one clean stable merged build,
+- keep one separate debug-comments build,
+- keep the regression suite beside the stable build,
+- update the spec whenever a real subsystem is promoted or deliberately constrained.
